@@ -1,0 +1,14 @@
+{
+  "name": "udora-safety-estimator",
+  "version": "1.0.0",
+  "description": "Estimate Generator for Udora Safety by Anthony Boyington",
+  "private": true,
+  "scripts": {
+    "version:bump": "./version.sh",
+    "version:patch": "./version.sh patch",
+    "version:minor": "./version.sh minor",
+    "version:major": "./version.sh major"
+  },
+  "author": "Anthony Boyington",
+  "license": "MIT"
+}
