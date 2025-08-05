@@ -29,6 +29,7 @@ node_modules/
 *~
 *.bak
 _backup/
+_backup
 
 # PHP cache
 *.cache
