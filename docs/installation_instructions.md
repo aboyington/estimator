@@ -1,8 +1,13 @@
-# Udora Safety Estimator - Installation Guide
+# White-Label Estimator - Installation Guide
+
+## About This Version
+**Version:** 1.1.0  
+**New in v1.1.0:** Complete white-labeling capabilities - customize all branding elements including page titles, headers, and footers to match your company.
 
 ## Requirements
 - Web server with PHP 7.4+ and SQLite support
 - Modern web browser
+- Git (for version control and updates)
 
 ## Installation Steps
 
@@ -48,6 +53,14 @@ The system comes pre-configured with:
 - Company information updates
 - Tax rate configuration
 - Warranty and payment terms
+
+### White-Labeling Features (New in v1.1.0)
+- **Dynamic Page Titles:** Browser tab automatically shows your company name
+- **Custom Headers:** Main application header displays your company branding
+- **Branded Footer:** Footer shows your company name with current year copyright
+- **Real-time Updates:** All branding changes apply immediately when settings are saved
+- **Professional Appearance:** Maintains clean, professional look with your custom branding
+- **Fallback Defaults:** Gracefully defaults to "Udora Safety" if no company name is set
 
 ### Estimate History
 - View all saved estimates
@@ -114,5 +127,25 @@ You can modify:
 - Password authentication method in api.php
 - Estimate template in the preview function
 
+## Version Control & Updates
+
+### GitHub Repository
+This project is now maintained on GitHub: https://github.com/aboyington/estimator
+
+### Getting Updates
+To update to the latest version:
+1. Backup your `udora_estimates.db` file
+2. Pull the latest changes from the repository
+3. Review any new installation or configuration requirements
+
+### Version History
+- **v1.1.0 (Current):** White-labeling implementation with dynamic branding
+- **v1.0.0:** Core estimator functionality with products management
+
 ## Backup
 Regular backup of `udora_estimates.db` is recommended to preserve your estimate history and settings.
+
+### Backup Checklist
+- Database file: `udora_estimates.db`
+- Configuration files: `api.php` (for password changes)
+- Custom modifications: Any CSS or template customizations
