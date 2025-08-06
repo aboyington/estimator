@@ -14,6 +14,13 @@ if (!isset($_SESSION['authenticated']) && $_REQUEST['action'] !== 'login') {
 try {
     $db = new PDO('sqlite:udora_estimates.db');
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Enable WAL mode and performance optimizations
+    $db->exec('PRAGMA journal_mode=WAL');
+    $db->exec('PRAGMA synchronous=NORMAL');
+    $db->exec('PRAGMA cache_size=10000');
+    $db->exec('PRAGMA temp_store=MEMORY');
+    $db->exec('PRAGMA mmap_size=268435456'); // 256MB
 
     $action = $_REQUEST['action'] ?? '';
 
@@ -403,6 +410,132 @@ try {
                 echo json_encode([
                     'success' => false, 
                     'error' => 'Some products could not be imported', 
+                    'imported' => $imported,
+                    'errors' => $errors
+                ]);
+            } else {
+                echo json_encode(['success' => true, 'imported' => $imported]);
+            }
+            break;
+
+        case 'get_detailed_estimates':
+            // Get all estimates with their line items for export
+            $stmt = $db->query("
+                SELECT e.*, 
+                       GROUP_CONCAT(
+                           li.description || '|' || li.quantity || '|' || li.unit_cost || '|' || li.category || '|' || li.markup_percent || '|' || li.line_total,
+                           ';;'
+                       ) as line_items_concat
+                FROM estimates e
+                LEFT JOIN line_items li ON e.id = li.estimate_id
+                GROUP BY e.id
+                ORDER BY e.created_at DESC
+            ");
+            $estimates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Process line items for each estimate
+            foreach ($estimates as &$estimate) {
+                $estimate['line_items'] = [];
+                if ($estimate['line_items_concat']) {
+                    $lineItemStrings = explode(';;', $estimate['line_items_concat']);
+                    foreach ($lineItemStrings as $itemString) {
+                        $parts = explode('|', $itemString);
+                        if (count($parts) >= 6) {
+                            $estimate['line_items'][] = [
+                                'description' => $parts[0],
+                                'quantity' => $parts[1],
+                                'unit_cost' => $parts[2],
+                                'category' => $parts[3],
+                                'markup_percent' => $parts[4],
+                                'line_total' => $parts[5]
+                            ];
+                        }
+                    }
+                }
+                unset($estimate['line_items_concat']);
+            }
+            
+            echo json_encode($estimates);
+            break;
+
+        case 'import_estimates':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $estimates = $data['estimates'] ?? [];
+            
+            if (!is_array($estimates)) {
+                echo json_encode(['success' => false, 'error' => 'Invalid data format']);
+                break;
+            }
+            
+            $imported = 0;
+            $errors = [];
+            
+            // Prepare statements
+            $estimateStmt = $db->prepare("
+                INSERT INTO estimates (estimate_number, client_name, client_email, client_phone, project_address, project_type, system_types, subtotal, tax_amount, total_amount, notes, status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $lineItemStmt = $db->prepare("
+                INSERT INTO line_items (estimate_id, description, quantity, unit_cost, category, markup_percent, line_total) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            foreach ($estimates as $index => $estimate) {
+                // Skip empty estimates
+                if (empty($estimate['client_name'])) {
+                    continue;
+                }
+                
+                try {
+                    // Generate unique estimate number
+                    $estimateNumber = 'EST-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+                    
+                    // Insert estimate
+                    $estimateStmt->execute([
+                        $estimateNumber,
+                        $estimate['client_name'] ?? '',
+                        $estimate['client_email'] ?? '',
+                        $estimate['client_phone'] ?? '',
+                        $estimate['project_address'] ?? '',
+                        $estimate['project_type'] ?? 'residential',
+                        json_encode([]), // Empty system types array
+                        $estimate['subtotal'] ?? 0,
+                        $estimate['tax_amount'] ?? 0,
+                        $estimate['total_amount'] ?? 0,
+                        $estimate['notes'] ?? '',
+                        $estimate['status'] ?? 'draft'
+                    ]);
+                    
+                    $estimateId = $db->lastInsertId();
+                    
+                    // Insert line items if present
+                    if (isset($estimate['line_items']) && is_array($estimate['line_items'])) {
+                        foreach ($estimate['line_items'] as $lineItem) {
+                            if (!empty($lineItem['description'])) {
+                                $lineItemStmt->execute([
+                                    $estimateId,
+                                    $lineItem['description'] ?? '',
+                                    $lineItem['quantity'] ?? 1,
+                                    $lineItem['unit_cost'] ?? 0,
+                                    $lineItem['category'] ?? 'hardware',
+                                    $lineItem['markup_percent'] ?? 0,
+                                    $lineItem['line_total'] ?? 0
+                                ]);
+                            }
+                        }
+                    }
+                    
+                    $imported++;
+                } catch (PDOException $e) {
+                    $errors[] = "Estimate " . ($index + 1) . ": " . $e->getMessage();
+                }
+            }
+            
+            if (count($errors) > 0) {
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Some estimates could not be imported', 
                     'imported' => $imported,
                     'errors' => $errors
                 ]);

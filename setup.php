@@ -4,6 +4,13 @@
 try {
     $db = new PDO('sqlite:udora_estimates.db');
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Enable WAL mode and performance optimizations
+    $db->exec('PRAGMA journal_mode=WAL');
+    $db->exec('PRAGMA synchronous=NORMAL');
+    $db->exec('PRAGMA cache_size=10000');
+    $db->exec('PRAGMA temp_store=MEMORY');
+    $db->exec('PRAGMA mmap_size=268435456'); // 256MB
 
     // Settings table
     $db->exec("CREATE TABLE IF NOT EXISTS settings (
