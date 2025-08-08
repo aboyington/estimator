@@ -12,7 +12,7 @@ if (!isset($_SESSION['authenticated']) && $_REQUEST['action'] !== 'login') {
 }
 
 try {
-    $db = new PDO('sqlite:udora_estimates.db');
+    $db = new PDO('sqlite:estimator.db');
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Enable WAL mode and performance optimizations
@@ -542,6 +542,262 @@ try {
             } else {
                 echo json_encode(['success' => true, 'imported' => $imported]);
             }
+            break;
+
+        // Packages endpoints
+        case 'get_packages':
+            $stmt = $db->query("SELECT * FROM packages WHERE status = 'active' ORDER BY name ASC");
+            $packages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($packages);
+            break;
+
+        case 'get_package':
+            $id = $_GET['id'] ?? 0;
+            $stmt = $db->prepare("SELECT * FROM packages WHERE id = ?");
+            $stmt->execute([$id]);
+            $package = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($package) {
+                $stmt = $db->prepare("SELECT * FROM package_line_items WHERE package_id = ? ORDER BY sort_order ASC");
+                $stmt->execute([$id]);
+                $package['line_items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            echo json_encode($package);
+            break;
+
+        case 'save_package':
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            // Insert package
+            $stmt = $db->prepare("INSERT INTO packages (name, description, category, base_price, status) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['name'],
+                $data['description'] ?? '',
+                $data['category'] ?? 'camera_systems',
+                $data['base_price'] ?? 0.00,
+                $data['status'] ?? 'active'
+            ]);
+            
+            $packageId = $db->lastInsertId();
+            
+            // Insert package line items
+            if (isset($data['line_items']) && is_array($data['line_items'])) {
+                $stmt = $db->prepare("INSERT INTO package_line_items (package_id, description, quantity, unit_cost, category, markup_percent, line_total, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $sortOrder = 1;
+                foreach ($data['line_items'] as $item) {
+                    $stmt->execute([
+                        $packageId,
+                        $item['description'],
+                        $item['quantity'],
+                        $item['unit_cost'],
+                        $item['category'],
+                        $item['markup_percent'] ?? 0,
+                        $item['line_total'] ?? 0,
+                        $sortOrder++
+                    ]);
+                }
+            }
+            
+            echo json_encode(['success' => true, 'package_id' => $packageId]);
+            break;
+
+        case 'update_package':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $id = $data['id'] ?? 0;
+            
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'No package ID provided']);
+                break;
+            }
+            
+            // Update package
+            $stmt = $db->prepare("UPDATE packages SET name = ?, description = ?, category = ?, base_price = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([
+                $data['name'],
+                $data['description'] ?? '',
+                $data['category'] ?? 'camera_systems',
+                $data['base_price'] ?? 0.00,
+                $data['status'] ?? 'active',
+                $id
+            ]);
+            
+            // Delete existing package line items
+            $stmt = $db->prepare("DELETE FROM package_line_items WHERE package_id = ?");
+            $stmt->execute([$id]);
+            
+            // Insert updated package line items
+            if (isset($data['line_items']) && is_array($data['line_items'])) {
+                $stmt = $db->prepare("INSERT INTO package_line_items (package_id, description, quantity, unit_cost, category, markup_percent, line_total, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $sortOrder = 1;
+                foreach ($data['line_items'] as $item) {
+                    $stmt->execute([
+                        $id,
+                        $item['description'],
+                        $item['quantity'],
+                        $item['unit_cost'],
+                        $item['category'],
+                        $item['markup_percent'] ?? 0,
+                        $item['line_total'] ?? 0,
+                        $sortOrder++
+                    ]);
+                }
+            }
+            
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'delete_package':
+            $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+            
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'No package ID provided']);
+                break;
+            }
+            
+            // Delete package line items first (foreign key constraint)
+            $stmt = $db->prepare("DELETE FROM package_line_items WHERE package_id = ?");
+            $stmt->execute([$id]);
+            
+            // Delete package
+            $stmt = $db->prepare("DELETE FROM packages WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'get_package_categories':
+            $stmt = $db->query("SELECT * FROM package_categories ORDER BY name ASC");
+            $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($categories);
+            break;
+
+        case 'add_package_category':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $name = $data['name'] ?? '';
+            $label = $data['label'] ?? '';
+            
+            if (!$name || !$label) {
+                echo json_encode(['success' => false, 'error' => 'Name and label are required']);
+                break;
+            }
+            
+            // Check if category already exists
+            $stmt = $db->prepare("SELECT id FROM package_categories WHERE name = ?");
+            $stmt->execute([$name]);
+            if ($stmt->fetch()) {
+                echo json_encode(['success' => false, 'error' => 'Category already exists']);
+                break;
+            }
+            
+            $stmt = $db->prepare("INSERT INTO package_categories (name, label) VALUES (?, ?)");
+            $stmt->execute([$name, $label]);
+            
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'update_package_category':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $id = $data['id'] ?? 0;
+            $name = $data['name'] ?? '';
+            $label = $data['label'] ?? '';
+            
+            if (!$id || !$name || !$label) {
+                echo json_encode(['success' => false, 'error' => 'ID, name and label are required']);
+                break;
+            }
+            
+            // Check if another category with this name already exists
+            $stmt = $db->prepare("SELECT id FROM package_categories WHERE name = ? AND id != ?");
+            $stmt->execute([$name, $id]);
+            if ($stmt->fetch()) {
+                echo json_encode(['success' => false, 'error' => 'Another category with this name already exists']);
+                break;
+            }
+            
+            $stmt = $db->prepare("UPDATE package_categories SET name = ?, label = ? WHERE id = ?");
+            $stmt->execute([$name, $label, $id]);
+            
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'delete_package_category':
+            $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+            
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'No category ID provided']);
+                break;
+            }
+            
+            // Check if category is being used by any packages
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM packages WHERE category = (SELECT name FROM package_categories WHERE id = ?)");
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result['count'] > 0) {
+                echo json_encode(['success' => false, 'error' => 'Cannot delete category that is being used by packages']);
+                break;
+            }
+            
+            $stmt = $db->prepare("DELETE FROM package_categories WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'duplicate_package':
+            $id = $_POST['id'] ?? 0;
+            
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'No package ID provided']);
+                break;
+            }
+            
+            // Get original package
+            $stmt = $db->prepare("SELECT * FROM packages WHERE id = ?");
+            $stmt->execute([$id]);
+            $originalPackage = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$originalPackage) {
+                echo json_encode(['success' => false, 'error' => 'Package not found']);
+                break;
+            }
+            
+            // Create new package with "Copy of" prefix
+            $newName = 'Copy of ' . $originalPackage['name'];
+            $stmt = $db->prepare("INSERT INTO packages (name, description, category, base_price, status) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $newName,
+                $originalPackage['description'],
+                $originalPackage['category'],
+                $originalPackage['base_price'],
+                'active'
+            ]);
+            
+            $newPackageId = $db->lastInsertId();
+            
+            // Copy line items
+            $stmt = $db->prepare("SELECT * FROM package_line_items WHERE package_id = ? ORDER BY sort_order ASC");
+            $stmt->execute([$id]);
+            $lineItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (!empty($lineItems)) {
+                $stmt = $db->prepare("INSERT INTO package_line_items (package_id, description, quantity, unit_cost, category, markup_percent, line_total, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                foreach ($lineItems as $item) {
+                    $stmt->execute([
+                        $newPackageId,
+                        $item['description'],
+                        $item['quantity'],
+                        $item['unit_cost'],
+                        $item['category'],
+                        $item['markup_percent'],
+                        $item['line_total'],
+                        $item['sort_order']
+                    ]);
+                }
+            }
+            
+            echo json_encode(['success' => true, 'package_id' => $newPackageId, 'name' => $newName]);
             break;
 
         default:

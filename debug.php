@@ -17,10 +17,10 @@ if (class_exists('PDO') && in_array('sqlite', PDO::getAvailableDrivers())) {
 
 // Test 3: Database File
 echo "<h3>3. Database File</h3>";
-if (file_exists('udora_estimates.db')) {
+if (file_exists('estimator.db')) {
     echo "✅ Database file exists<br>";
-    echo "File size: " . filesize('udora_estimates.db') . " bytes<br>";
-    echo "File permissions: " . substr(sprintf('%o', fileperms('udora_estimates.db')), -4) . "<br>";
+    echo "File size: " . filesize('estimator.db') . " bytes<br>";
+    echo "File permissions: " . substr(sprintf('%o', fileperms('estimator.db')), -4) . "<br>";
 } else {
     echo "❌ Database file does not exist - run setup.php first<br>";
 }
@@ -38,7 +38,7 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 // Test 5: Test Database Connection
 echo "<h3>5. Database Connection Test</h3>";
 try {
-    $db = new PDO('sqlite:udora_estimates.db');
+    $db = new PDO('sqlite:estimator.db');
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     echo "✅ Database connection successful<br>";
     

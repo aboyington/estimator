@@ -2,7 +2,7 @@
 // setup.php - Run this once to create the database and tables
 
 try {
-    $db = new PDO('sqlite:udora_estimates.db');
+    $db = new PDO('sqlite:estimator.db');
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Enable WAL mode and performance optimizations

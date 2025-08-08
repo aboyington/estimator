@@ -1,8 +1,9 @@
 # White-Label Estimator - Installation Guide
 
 ## About This Version
-**Version:** 1.1.0  
-**New in v1.1.0:** Complete white-labeling capabilities - customize all branding elements including page titles, headers, and footers to match your company.
+**Version:** 1.2.2  
+**New in v1.2.2:** Complete Package Management system - create, manage, and organize service packages with categories, pricing, and CSV import/export capabilities.
+**Previous:** Complete white-labeling capabilities and advanced estimate export/import functionality.
 
 ## Requirements
 - Web server with PHP 7.4+ and SQLite support
@@ -88,10 +89,31 @@ The system comes pre-configured with:
   - Import products from CSV with validation and error reporting
   - Format: SKU, Name, Category, Unit Cost, Description
 
+### Package Management (New in v1.2.2)
+- **Package Definition System:** Create and manage service packages
+  - Comprehensive package information (name, category, description, pricing)
+  - JSON-based component storage for flexible package definitions
+  - Professional package creation and editing forms with validation
+- **Package Categories:** Organize packages with dynamic categories
+  - Configurable package categories managed through Settings
+  - Full CRUD operations for package categories
+  - Real-time category updates in package management forms
+- **Advanced Package Interface:** Professional package catalog management
+  - Comprehensive package listing with tabular display
+  - Real-time search functionality across package names and descriptions
+  - Category-based filtering with dropdown selection
+  - Combined search and filtering operations
+- **CSV Import/Export for Packages:** Complete data portability
+  - One-click export of entire package catalog to structured CSV format
+  - Robust CSV import functionality with validation and error reporting
+  - Batch processing for multiple package definitions
+  - User-friendly interface with clear format instructions
+
 ## File Structure
 ```
 /your-web-directory/
 ├── index.html          # Main application
+├── packages.js         # Package management module
 ├── api.php            # Backend API
 ├── setup.php          # Database setup
 └── udora_estimates.db # SQLite database (created automatically)
@@ -139,7 +161,10 @@ To update to the latest version:
 3. Review any new installation or configuration requirements
 
 ### Version History
-- **v1.1.0 (Current):** White-labeling implementation with dynamic branding
+- **v1.2.2 (Current):** Package Management system with categories, CSV import/export, and bug fixes
+- **v1.2.1:** Critical bug fixes and database performance optimization (5x improvement)
+- **v1.2.0:** Advanced estimate export/import functionality with CSV format
+- **v1.1.0:** White-labeling implementation with dynamic branding
 - **v1.0.0:** Core estimator functionality with products management
 
 ## Backup
