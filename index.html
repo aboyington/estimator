@@ -928,8 +928,9 @@
               <input type="file" id="productImportFile" accept=".csv" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent" />
             </div>
             <div class="text-sm text-gray-600">
-              <p class="mb-2">CSV format should include columns: Name, SKU, Description, Cost, Price, Stock Quantity, Category</p>
-              <p>First row should contain column headers.</p>
+              <p class="mb-2">CSV format should include columns: Name, SKU, Description, Unit Cost, Category</p>
+              <p class="mb-2">First row should contain column headers.</p>
+              <p class="text-xs text-gray-500">Optional columns: Created At (will be auto-generated if not provided)</p>
             </div>
             <div class="flex justify-end space-x-3 pt-4">
               <button type="button" onclick="closeImportModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">Cancel</button>

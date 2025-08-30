@@ -851,6 +851,110 @@ try {
             echo json_encode(['success' => true]);
             break;
 
+        case 'import_products':
+            if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(['success' => false, 'error' => 'No file uploaded or upload error']);
+                break;
+            }
+
+            $file = $_FILES['file'];
+            $filePath = $file['tmp_name'];
+            
+            // Check if it's a CSV file
+            $fileType = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($fileType !== 'csv') {
+                echo json_encode(['success' => false, 'error' => 'File must be a CSV']);
+                break;
+            }
+
+            try {
+                $imported = 0;
+                $errors = [];
+                
+                if (($handle = fopen($filePath, 'r')) !== FALSE) {
+                    // Read the header row
+                    $headers = fgetcsv($handle);
+                    if (!$headers) {
+                        echo json_encode(['success' => false, 'error' => 'Invalid CSV file or empty headers']);
+                        break;
+                    }
+                    
+                    // Map headers to lowercase for flexible matching
+                    $headerMap = [];
+                    foreach ($headers as $index => $header) {
+                        $headerMap[strtolower(trim($header))] = $index;
+                    }
+                    
+                    // Prepare the insert statement
+                    $stmt = $db->prepare("INSERT INTO products_services (sku, name, description, category, unit_cost) VALUES (?, ?, ?, ?, ?)");
+                    
+                    $rowNumber = 1; // Start at 1 since we've read the header
+                    while (($row = fgetcsv($handle)) !== FALSE) {
+                        $rowNumber++;
+                        
+                        // Skip empty rows
+                        if (empty(array_filter($row))) {
+                            continue;
+                        }
+                        
+                        try {
+                            // Extract data using flexible header mapping
+                            $name = isset($headerMap['name']) ? trim($row[$headerMap['name']]) : '';
+                            $sku = isset($headerMap['sku']) ? trim($row[$headerMap['sku']]) : '';
+                            $description = isset($headerMap['description']) ? trim($row[$headerMap['description']]) : '';
+                            $category = isset($headerMap['category']) ? trim($row[$headerMap['category']]) : 'Uncategorized';
+                            
+                            // Handle various cost column names
+                            $unitCost = 0;
+                            if (isset($headerMap['unit cost'])) {
+                                $unitCost = floatval($row[$headerMap['unit cost']]);
+                            } elseif (isset($headerMap['cost'])) {
+                                $unitCost = floatval($row[$headerMap['cost']]);
+                            } elseif (isset($headerMap['price'])) {
+                                $unitCost = floatval($row[$headerMap['price']]);
+                            }
+                            
+                            // Validate required fields
+                            if (empty($name)) {
+                                $errors[] = "Row $rowNumber: Product name is required";
+                                continue;
+                            }
+                            
+                            // Insert the product
+                            $stmt->execute([
+                                $sku,
+                                $name,
+                                $description,
+                                $category,
+                                $unitCost
+                            ]);
+                            
+                            $imported++;
+                        } catch (PDOException $e) {
+                            $errors[] = "Row $rowNumber: " . $e->getMessage();
+                        }
+                    }
+                    
+                    fclose($handle);
+                }
+                
+                // Return results
+                if (count($errors) > 0) {
+                    echo json_encode([
+                        'success' => $imported > 0,
+                        'count' => $imported,
+                        'error' => count($errors) . ' rows had errors',
+                        'errors' => array_slice($errors, 0, 10) // Limit to first 10 errors
+                    ]);
+                } else {
+                    echo json_encode(['success' => true, 'count' => $imported]);
+                }
+                
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'error' => 'Import failed: ' . $e->getMessage()]);
+            }
+            break;
+
         default:
             echo json_encode(['error' => 'Invalid action']);
     }

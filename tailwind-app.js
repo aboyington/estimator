@@ -1240,18 +1240,17 @@ function exportProductsCSV() {
     return;
   }
 
-  const csvHeaders = ['Name', 'SKU', 'Description', 'Cost', 'Price', 'Stock Quantity', 'Category'];
+  const csvHeaders = ['Name', 'SKU', 'Description', 'Unit Cost', 'Category', 'Created At'];
   const csvData = [csvHeaders];
 
   allProducts.forEach(product => {
     csvData.push([
-      product.name,
-      product.sku,
+      product.name || '',
+      product.sku || '',
       product.description || '',
-      product.cost,
-      product.price,
-      product.stock_quantity || 0,
-      getCategoryName(product.category_id)
+      product.unit_cost || '0.00',
+      product.category || 'Uncategorized',
+      product.created_at || ''
     ]);
   });
 
