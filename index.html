@@ -143,7 +143,7 @@
         </div>
 
         <!-- Login Form -->
-        <div id="loginForm" class="space-y-4">
+        <div id="loginForm" class="grid grid-cols-1 gap-4">
           <input
             type="text"
             id="loginUsername"
@@ -156,16 +156,18 @@
             placeholder="Password"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
           />
-          <button 
-            onclick="login()" 
-            class="w-full bg-udora-600 hover:bg-udora-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-          >
-            Login
-          </button>
+          <div class="mt-2">
+            <button 
+              onclick="login()" 
+              class="w-full bg-udora-600 hover:bg-udora-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+            >
+              Login
+            </button>
+          </div>
         </div>
 
         <!-- Registration Form -->
-        <div id="registerForm" class="space-y-4 hidden">
+        <div id="registerForm" class="grid grid-cols-1 gap-4 hidden">
           <div class="grid grid-cols-2 gap-4">
             <input
               type="text"
@@ -204,12 +206,14 @@
             placeholder="Confirm Password"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
           />
-          <button 
-            onclick="register()" 
-            class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-          >
-            Create Account
-          </button>
+          <div class="mt-2">
+            <button 
+              onclick="register()" 
+              class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+            >
+              Create Account
+            </button>
+          </div>
         </div>
         
         <div
@@ -1024,7 +1028,7 @@
               <span id="footerCompanyName">Udora Safety</span> Estimator © <span id="footerYear">2025</span>
             </div>
             <div class="flex items-center space-x-2">
-              <span id="appVersion" class="bg-white/20 px-2 py-1 rounded text-xs font-mono">v1.2.2</span>
+              <span id="appVersion" class="bg-white/20 px-2 py-1 rounded text-xs font-mono">v1.2.3</span>
             </div>
           </div>
         </div>
@@ -1236,8 +1240,12 @@
                 </div>
               </div>
               <div class="mt-4">
-                <button onclick="saveUserProfile()" class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
-                  Update Profile
+                <button id="updateProfileBtn" onclick="saveUserProfile()" class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                  <svg id="updateProfileBtnSpinner" class="animate-spin -mr-1 ml-2 h-4 w-4 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span id="updateProfileBtnText">Update Profile</span>
                 </button>
               </div>
             </div>
@@ -1245,7 +1253,7 @@
             <!-- Change Password Section -->
             <div>
               <h4 class="text-lg font-medium text-gray-800 mb-4">Change Password</h4>
-              <div class="space-y-4">
+              <div class="grid grid-cols-1 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
                   <input type="password" id="currentPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent" />
@@ -1258,9 +1266,13 @@
                   <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
                   <input type="password" id="confirmNewPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent" />
                 </div>
-                <div>
-                  <button onclick="changeUserPassword()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
-                    Change Password
+                <div class="mt-2">
+                  <button id="changePasswordBtn" onclick="changeUserPassword()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                    <svg id="changePasswordBtnSpinner" class="animate-spin -mr-1 ml-2 h-4 w-4 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="changePasswordBtnText">Change Password</span>
                   </button>
                 </div>
               </div>

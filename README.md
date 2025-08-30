@@ -1,33 +1,34 @@
-# Udora Safety Estimate Generator
+# White-Label Estimator
 
-A comprehensive web application for creating, managing, and tracking estimates for safety systems and services.
+A comprehensive, fully customizable web application for creating, managing, and tracking estimates for contractors and service providers. Built with modern Tailwind CSS v4.0 and featuring complete white-labeling capabilities.
 
 ## 🚀 Quick Start
 
-1. **Production Version (Tailwind CSS):**
-   - Open `index-tailwind.html` in your browser
-   - Modern, responsive design with Tailwind CSS
-
-2. **Legacy Version:**
-   - Open `index.html` in your browser
-   - Original custom CSS version
+1. **Set up local web server** (MAMP, XAMPP, or built-in PHP server)
+2. **Open `index.html`** in your browser
+3. **Default login password:** `udora12345` (configurable in `api.php`)
+4. **Configure your company branding** in Settings tab
 
 ## 📁 Project Structure
 
 ```
 /estimator/
 ├── README.md              # Project overview
-├── index-tailwind.html    # Main application (Tailwind CSS)
-├── index.html             # Legacy version (custom CSS)
-├── tailwind-app.js        # Main JavaScript functionality
+├── index.html             # Main application (production-ready)
+├── tailwind-app.js        # Core application JavaScript
 ├── packages.js            # Package management functionality
 ├── api.php                # Backend API endpoints
+├── warp.md                # Technical documentation
 ├── estimator.db           # SQLite database
+├── src/                   # 📁 Tailwind CSS source files
+│   └── input.css          # Tailwind source with custom styles
+├── dist/                  # 📁 Compiled production assets
+│   └── output.css         # Optimized CSS (81KB)
 ├── docs/                  # 📁 All documentation
 └── archive/               # 📁 Development & backup files
-    ├── development/       # Dev tools, configs, debug files
-    ├── database-files/    # Database backups & temp files
-    ├── testing/           # Test files & style backups
+    ├── development/       # Dev files, old versions
+    ├── database-files/    # Database backups
+    ├── testing/           # Test files
     └── _backup/           # Original backup folder
 ```
 
@@ -60,14 +61,14 @@ All project documentation is located in the `/docs` folder:
 - **Database**: SQLite
 - **Server**: Apache/Nginx with PHP support
 
-## 🎨 Recent Updates
+## 🎨 Recent Updates (v1.2.3)
 
-**✅ Tailwind CSS Migration Complete**
-- Modern utility-first CSS architecture
-- Responsive design across all devices
-- Custom Udora Safety brand colors
-- Improved performance and maintainability
-- All original functionality preserved
+**✅ Tailwind CSS v4.0 & UI/UX Enhancements**
+- Complete migration to Tailwind CSS v4.0 with 97% bundle size reduction (3MB → 81KB)
+- Professional footer with dynamic company branding and version display
+- Enhanced user experience with button loading states and visual feedback
+- Improved form layouts with consistent spacing and professional presentation
+- Custom modal system replacing browser prompts for better user experience
 
 ## 📋 Requirements
 
@@ -81,15 +82,27 @@ All project documentation is located in the `/docs` folder:
 1. Clone or download the project files
 2. Set up a local web server (MAMP, XAMPP, or similar)
 3. Place files in your web server's document root
-4. Open `index-tailwind.html` in your browser
-5. Default password is configured in `api.php`
+4. Open `index.html` in your browser
+5. Login with default password: `udora12345`
+6. Configure your company branding in Settings
+
+## 🔧 Development
+
+For CSS development with Tailwind v4.0:
+```bash
+# Watch for changes during development
+npm run watch
+
+# Build optimized CSS for production
+npm run build
+```
 
 ## 📞 Support
 
-For technical support or questions about the Udora Safety Estimate Generator, please refer to the documentation in the `/docs` folder or contact your system administrator.
+For technical support or questions about the White-Label Estimator, please refer to the documentation in the `/docs` folder or contact your system administrator.
 
 ---
 
-**Version**: 2.0 (Tailwind CSS)  
-**Last Updated**: August 2024  
+**Version**: v1.2.3  
+**Last Updated**: August 2025  
 **Status**: Production Ready ✅

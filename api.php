@@ -1038,15 +1038,9 @@ try {
             
             $currentPassword = $data['current_password'] ?? '';
             $newPassword = $data['new_password'] ?? '';
-            $confirmPassword = $data['confirm_password'] ?? '';
             
-            if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
-                echo json_encode(['success' => false, 'error' => 'All password fields are required']);
-                break;
-            }
-            
-            if ($newPassword !== $confirmPassword) {
-                echo json_encode(['success' => false, 'error' => 'New passwords do not match']);
+            if (empty($currentPassword) || empty($newPassword)) {
+                echo json_encode(['success' => false, 'error' => 'Current password and new password are required']);
                 break;
             }
             

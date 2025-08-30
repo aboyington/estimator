@@ -2400,6 +2400,16 @@ async function saveUserProfile() {
     return;
   }
   
+  // Show loading state
+  const btn = document.getElementById('updateProfileBtn');
+  const btnText = document.getElementById('updateProfileBtnText');
+  const btnSpinner = document.getElementById('updateProfileBtnSpinner');
+  
+  btn.disabled = true;
+  btn.classList.add('opacity-75', 'cursor-not-allowed');
+  btnText.textContent = 'Updating...';
+  btnSpinner.classList.remove('hidden');
+  
   try {
     const response = await fetch('api.php?action=update_profile', {
       method: 'POST',
@@ -2423,12 +2433,26 @@ async function saveUserProfile() {
       updateUserDisplay();
       
       showToast('Profile updated successfully!');
+      
+      // Brief success state
+      btnText.textContent = 'Updated!';
+      setTimeout(() => {
+        btnText.textContent = 'Update Profile';
+      }, 1500);
     } else {
       showToast('Error updating profile: ' + (result.error || 'Unknown error'), 'error');
     }
   } catch (error) {
     console.error('Error updating profile:', error);
     showToast('Error updating profile', 'error');
+  } finally {
+    // Reset button state
+    btn.disabled = false;
+    btn.classList.remove('opacity-75', 'cursor-not-allowed');
+    btnSpinner.classList.add('hidden');
+    if (btnText.textContent === 'Updating...') {
+      btnText.textContent = 'Update Profile';
+    }
   }
 }
 
@@ -2452,6 +2476,16 @@ async function changeUserPassword() {
     return;
   }
   
+  // Show loading state
+  const btn = document.getElementById('changePasswordBtn');
+  const btnText = document.getElementById('changePasswordBtnText');
+  const btnSpinner = document.getElementById('changePasswordBtnSpinner');
+  
+  btn.disabled = true;
+  btn.classList.add('opacity-75', 'cursor-not-allowed');
+  btnText.textContent = 'Changing...';
+  btnSpinner.classList.remove('hidden');
+  
   try {
     const response = await fetch('api.php?action=change_password', {
       method: 'POST',
@@ -2471,34 +2505,35 @@ async function changeUserPassword() {
       document.getElementById('confirmNewPassword').value = '';
       
       showToast('Password changed successfully!');
+      
+      // Brief success state
+      btnText.textContent = 'Changed!';
+      setTimeout(() => {
+        btnText.textContent = 'Change Password';
+      }, 1500);
     } else {
       showToast('Error changing password: ' + (result.error || 'Unknown error'), 'error');
     }
   } catch (error) {
     console.error('Error changing password:', error);
     showToast('Error changing password', 'error');
+  } finally {
+    // Reset button state
+    btn.disabled = false;
+    btn.classList.remove('opacity-75', 'cursor-not-allowed');
+    btnSpinner.classList.add('hidden');
+    if (btnText.textContent === 'Changing...') {
+      btnText.textContent = 'Change Password';
+    }
   }
 }
 
 // Update user display in header
 function updateUserDisplay() {
-  if (currentUser) {
-    const userInitials = document.getElementById('userInitials');
-    
-    // Generate initials from first and last name, or use username if names not available
-    let initials = 'U';
-    if (currentUser.first_name && currentUser.last_name) {
-      initials = (currentUser.first_name.charAt(0) + currentUser.last_name.charAt(0)).toUpperCase();
-    } else if (currentUser.first_name) {
-      initials = currentUser.first_name.charAt(0).toUpperCase();
-    } else if (currentUser.username) {
-      initials = currentUser.username.charAt(0).toUpperCase();
-    }
-    
-    if (userInitials) {
-      userInitials.textContent = initials;
-    }
-  }
+  // With the new person icon design, no dynamic updates are needed
+  // The profile icon is now a static SVG person icon
+  // This function is kept for future extensibility if needed
+  console.log('User display updated for:', currentUser?.username || 'Unknown user');
 }
 
 // Initialize
