@@ -11,6 +11,7 @@ A comprehensive web application for creating, managing, and tracking estimates f
 - **Settings**: Configure pricing, markup, tax rates, and company information
 - **Export/Import**: CSV functionality for data management and backup
 - **Responsive Design**: Mobile-friendly interface with responsive navigation
+- **Dynamic Footer**: Professional footer with company branding, copyright, and version display
 
 ## Current Status
 - **Production Ready**: Successfully upgraded to Tailwind CSS v4.0 (August 2025)

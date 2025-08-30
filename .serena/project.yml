@@ -63,6 +63,18 @@ excluded_tools: []
 
 # initial prompt for the project. It will always be given to the LLM upon activating the project
 # (contrary to the memories, which are loaded on demand).
-initial_prompt: ""
+initial_prompt: |
+  This is the Udora Safety Estimator - a professional web application for safety system estimates.
+  
+  RECENT WORK COMPLETED (August 30, 2025):
+  - ✅ Footer implementation and positioning fixes completed
+  - ✅ Custom styled input modal for category editing (replaces browser prompts)
+  - ✅ Tailwind CSS v4.0 upgrade completed with 97% bundle size reduction
+  
+  CURRENT STATUS:
+  - Production-ready application with modern Tailwind CSS
+  - All major features implemented and working
+  - Professional footer with company branding and dynamic version display
+  - Responsive design optimized for all screen sizes
 
 project_name: "estimator"
