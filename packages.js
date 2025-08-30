@@ -192,7 +192,7 @@ async function savePackage() {
     const description = document.getElementById('packageDescription').value.trim();
     
     if (!name) {
-        alert('Please enter a package name');
+        showToast('Please enter a package name', 'error');
         return;
     }
     
@@ -215,7 +215,7 @@ async function savePackage() {
     });
     
     if (lineItems.length === 0) {
-        alert('Please add at least one line item to the package');
+        showToast('Please add at least one line item to the package', 'error');
         return;
     }
     
@@ -313,26 +313,24 @@ async function editPackage(id) {
 }
 
 async function deletePackage(id) {
-    if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`api.php?action=delete_package&id=${id}`, {
-            method: 'POST'
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            showToast('Package deleted successfully!');
-            loadPackages();
-        } else {
-            showToast('Error deleting package: ' + (result.error || 'Unknown error'), 'error');
+    showConfirmation('Are you sure you want to delete this package? This action cannot be undone.', async () => {
+        try {
+            const response = await fetch(`api.php?action=delete_package&id=${id}`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showToast('Package deleted successfully!');
+                loadPackages();
+            } else {
+                showToast('Error deleting package: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting package:', error);
+            showToast('Error deleting package', 'error');
         }
-    } catch (error) {
-        console.error('Error deleting package:', error);
-        showToast('Error deleting package', 'error');
-    }
+    });
 }
 
 async function duplicatePackage(id) {
@@ -471,10 +469,14 @@ function filterPackages(page = 1) {
                             <td style="padding: 1rem; border: 1px solid #ddd;">${shortDesc}</td>
                             <td style="padding: 1rem; border: 1px solid #ddd;">$${parseFloat(pkg.base_price || 0).toFixed(2)}</td>
                             <td style="padding: 1rem; border: 1px solid #ddd;">
-                                <button onclick="usePackageInEstimate(${pkg.id})" class="btn" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Use in Estimate</button>
-                                <button onclick="editPackage(${pkg.id})" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Edit</button>
-                                <button onclick="duplicatePackage(${pkg.id})" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Duplicate</button>
-                                <button onclick="deletePackage(${pkg.id})" class="btn btn-danger" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Delete</button>
+                                <div class="flex flex-col space-y-1">
+                                    <div class="flex space-x-1">
+                                        <button onclick="editPackage(${pkg.id})" class="bg-gray-600 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded transition-colors duration-200">Edit</button>
+                                        <button onclick="duplicatePackage(${pkg.id})" class="bg-gray-600 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded transition-colors duration-200">Duplicate</button>
+                                        <button onclick="deletePackage(${pkg.id})" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded transition-colors duration-200">Delete</button>
+                                    </div>
+                                    <button onclick="usePackageInEstimate(${pkg.id})" class="bg-udora-600 hover:bg-udora-700 text-white text-xs px-2 py-1 rounded w-full transition-colors duration-200">Use in Estimate</button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -616,36 +618,99 @@ function cancelPackageImport() {
 function importPackagesCSV() {
     const fileInput = document.getElementById('packageCsvFileInput');
     if (!fileInput.files.length) {
-        alert('Please select a CSV file to import.');
+        showToast('Please select a CSV file to import.', 'error');
         return;
     }
     
     const file = fileInput.files[0];
+    
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showToast('Please select a CSV file', 'error');
+        return;
+    }
+    
     const reader = new FileReader();
-    reader.onload = function(event) {
-        const csvData = event.target.result;
-        const rows = csvData.split('\n').filter(row => row.trim().length > 0);
-        
-        // Simple CSV parsing (for basic format)
-        const packages = rows.slice(1).map(row => {
-            const columns = row.split(',').map(col => col.trim().replace(/^"(.*)"$/, '$1'));
-            return {
-                name: columns[0] || '',
-                category: columns[1] || 'camera_systems',
-                description: columns[2] || '',
-                base_price: parseFloat(columns[3]) || 0,
-                status: columns[4] || 'active'
-            };
-        }).filter(pkg => pkg.name.length > 0);
-        
-        if (packages.length === 0) {
-            alert('No valid packages found in the CSV file.');
-            return;
+    reader.onload = async function(event) {
+        try {
+            const csvData = event.target.result;
+            const lines = csvData.trim().split('\n');
+            
+            if (lines.length < 2) {
+                showToast('CSV file must have at least a header row and one data row', 'error');
+                return;
+            }
+            
+            // Parse CSV headers (assuming first row is headers)
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+            
+            // Check for required columns
+            const requiredColumns = ['package name', 'name'];
+            const hasRequiredColumn = requiredColumns.some(col => headers.includes(col));
+            
+            if (!hasRequiredColumn) {
+                showToast('CSV must have at least "Package Name" or "Name" column', 'error');
+                return;
+            }
+            
+            // Parse data rows
+            const packages = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+                
+                if (values.length < headers.length) {
+                    // Skip rows with insufficient data
+                    continue;
+                }
+                
+                const packageObj = {};
+                headers.forEach((header, index) => {
+                    packageObj[header] = values[index] || '';
+                });
+                
+                // Map to expected format
+                const formattedPackage = {
+                    name: packageObj['package name'] || packageObj['name'] || '',
+                    category: packageObj['category'] || 'camera_systems',
+                    description: packageObj['description'] || '',
+                    base_price: parseFloat(packageObj['base price'] || packageObj['price'] || 0),
+                    status: packageObj['status'] || 'active'
+                };
+                
+                // Validate required fields
+                if (!formattedPackage.name || formattedPackage.name.trim() === '') {
+                    continue; // Skip packages without names
+                }
+                
+                packages.push(formattedPackage);
+            }
+            
+            if (packages.length === 0) {
+                showToast('No valid packages found in CSV', 'error');
+                return;
+            }
+            
+            // Send to API
+            const response = await fetch('api.php?action=import_packages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ packages: packages })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showToast(`Successfully imported ${result.imported || packages.length} packages!`);
+                cancelPackageImport();
+                loadPackages();
+            } else {
+                showToast('Import failed: ' + (result.error || 'Unknown error'), 'error');
+                if (result.errors && result.errors.length > 0) {
+                    console.log('Import errors:', result.errors);
+                }
+            }
+        } catch (error) {
+            console.error('Error importing packages:', error);
+            showToast('Error parsing CSV file', 'error');
         }
-        
-        // Note: This is a simplified import. For line items, you'd need a more complex CSV format
-        showToast('Package import feature is simplified. Consider adding line items manually.', 'error');
-        cancelPackageImport();
     };
     
     reader.readAsText(file);

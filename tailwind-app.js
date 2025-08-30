@@ -11,6 +11,27 @@ const itemsPerPage = 20;
 // Note: allPackages, packageCategories, editingPackageId, currentPackagePage, packagesPerPage, packageSort, packageLineItemCounter
 // are declared in packages.js to avoid conflicts
 
+// Global confirmation modal functions
+let confirmationCallback = null;
+
+function showConfirmation(message, callback) {
+    document.getElementById('confirmationMessage').textContent = message;
+    confirmationCallback = callback;
+    document.getElementById('confirmationModal').classList.remove('hidden');
+}
+
+function closeConfirmationModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+    confirmationCallback = null;
+}
+
+function confirmAction() {
+    if (confirmationCallback) {
+        confirmationCallback();
+    }
+    closeConfirmationModal();
+}
+
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
@@ -131,7 +152,7 @@ function showSection(section) {
     } else if (section === 'products') {
       loadProductsServices();
     } else if (section === 'packages') {
-      loadPackages();
+      // loadPackages() is handled by packages.js via updateShowSectionForPackages()
     } else if (section === 'settings') {
       loadProductCategories();
       loadPackageCategories();
@@ -1291,7 +1312,15 @@ function updateProductCount(filteredCount) {
 
 // Package functions
 async function loadPackages() {
-  // Implementation here
+  try {
+    const response = await fetch('api.php?action=get_packages');
+    allPackages = await response.json();
+    await loadPackageCategories();
+    filterPackages();
+  } catch (error) {
+    console.error('Error loading packages:', error);
+    showToast('Error loading packages', 'error');
+  }
 }
 
 // Product CRUD operations
@@ -1428,11 +1457,56 @@ async function loadProductCategories() {
 }
 
 async function loadPackageCategories() {
-  // Implementation here
+  try {
+    const response = await fetch('api.php?action=get_package_categories');
+    packageCategories = await response.json();
+    
+    // Update category dropdowns if they exist
+    const categorySelects = document.querySelectorAll('#packageCategoryId, #packageCategoryFilter');
+    categorySelects.forEach(select => {
+      if (select) {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Select Category</option>';
+        packageCategories.forEach(category => {
+          select.innerHTML += `<option value="${category.name || category.id}">${category.label || category.name}</option>`;
+        });
+        select.value = currentValue;
+      }
+    });
+  } catch (error) {
+    console.error('Error loading package categories:', error);
+  }
 }
 
 async function addCategory() {
-  // Implementation here
+  const categoryName = prompt('Enter category name:');
+  const categoryLabel = prompt('Enter category display label:');
+  
+  if (!categoryName || !categoryLabel) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('api.php?action=add_package_category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: categoryName.toLowerCase().replace(/\s+/g, '_'),
+        label: categoryLabel
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      showToast('Category added successfully!');
+      loadPackageCategories();
+    } else {
+      showToast('Error adding category: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error adding category:', error);
+    showToast('Error adding category', 'error');
+  }
 }
 
 // Export functions
@@ -1538,7 +1612,13 @@ function exportProductsCSV() {
 }
 
 function exportPackagesCSV() {
-  // Implementation here
+  // This function is implemented in packages.js
+  if (typeof window.exportPackagesCSV === 'function') {
+    return window.exportPackagesCSV();
+  }
+  
+  // Fallback implementation if packages.js is not loaded
+  showToast('Package export functionality not available', 'error');
 }
 
 // Import functions
@@ -1701,7 +1781,13 @@ async function importProducts() {
 }
 
 function showPackageImportForm() {
-  // Implementation here
+  // This function is implemented in packages.js
+  if (typeof window.showPackageImportForm === 'function') {
+    return window.showPackageImportForm();
+  }
+  
+  // Fallback implementation if packages.js is not loaded
+  showToast('Package import functionality not available', 'error');
 }
 
 // Use in Estimate functionality

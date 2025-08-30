@@ -978,6 +978,24 @@
       </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="hidden fixed inset-0 bg-black/80 z-2000">
+      <div class="bg-white mx-auto my-[20%] w-[90%] max-w-[400px] rounded-card overflow-hidden">
+        <div class="p-4 bg-red-600 text-white flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Confirm Action</h3>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <p id="confirmationMessage" class="text-gray-700">Are you sure you want to proceed?</p>
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" onclick="closeConfirmationModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">Cancel</button>
+              <button type="button" id="confirmButton" onclick="confirmAction()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Include JavaScript -->
     <script src="tailwind-app.js?v=2.1"></script>
     <script src="packages.js?v=2.1"></script>
