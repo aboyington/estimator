@@ -154,8 +154,8 @@ function showSection(section) {
     } else if (section === 'packages') {
       // loadPackages() is handled by packages.js via updateShowSectionForPackages()
     } else if (section === 'settings') {
-      loadProductCategories();
-      loadPackageCategories();
+      loadProductCategories().then(() => renderProductCategoryList());
+      loadPackageCategories().then(() => renderPackageCategoryList());
     }
   } catch (error) {
     console.error('Error within showSection:', error);
@@ -1478,11 +1478,60 @@ async function loadPackageCategories() {
   }
 }
 
+// Category Management Functions
 async function addCategory() {
-  const categoryName = prompt('Enter category name:');
-  const categoryLabel = prompt('Enter category display label:');
+  const categoryName = document.getElementById('newCategoryName').value.trim();
+  const categoryLabel = document.getElementById('newCategoryLabel').value.trim();
   
   if (!categoryName || !categoryLabel) {
+    showToast('Please enter both category ID and display name', 'error');
+    return;
+  }
+  
+  // Validate category name format
+  if (!/^[a-z_]+$/.test(categoryName)) {
+    showToast('Category ID must contain only lowercase letters and underscores', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch('api.php?action=add_product_category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: categoryName,
+        label: categoryLabel
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      showToast('Product category added successfully!');
+      document.getElementById('newCategoryName').value = '';
+      document.getElementById('newCategoryLabel').value = '';
+      renderProductCategoryList();
+      loadProductCategories(); // Refresh dropdowns
+    } else {
+      showToast('Error adding category: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error adding category:', error);
+    showToast('Error adding category', 'error');
+  }
+}
+
+async function addPackageCategory() {
+  const categoryName = document.getElementById('newPackageCategoryName').value.trim();
+  const categoryLabel = document.getElementById('newPackageCategoryLabel').value.trim();
+  
+  if (!categoryName || !categoryLabel) {
+    showToast('Please enter both category ID and display name', 'error');
+    return;
+  }
+  
+  // Validate category name format
+  if (!/^[a-z_]+$/.test(categoryName)) {
+    showToast('Category ID must contain only lowercase letters and underscores', 'error');
     return;
   }
   
@@ -1491,22 +1540,175 @@ async function addCategory() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: categoryName.toLowerCase().replace(/\s+/g, '_'),
+        name: categoryName,
         label: categoryLabel
       })
     });
     
     const result = await response.json();
     if (result.success) {
-      showToast('Category added successfully!');
-      loadPackageCategories();
+      showToast('Package category added successfully!');
+      document.getElementById('newPackageCategoryName').value = '';
+      document.getElementById('newPackageCategoryLabel').value = '';
+      renderPackageCategoryList();
+      loadPackageCategories(); // Refresh dropdowns
     } else {
-      showToast('Error adding category: ' + (result.error || 'Unknown error'), 'error');
+      showToast('Error adding package category: ' + (result.error || 'Unknown error'), 'error');
     }
   } catch (error) {
-    console.error('Error adding category:', error);
-    showToast('Error adding category', 'error');
+    console.error('Error adding package category:', error);
+    showToast('Error adding package category', 'error');
   }
+}
+
+async function editCategory(id, name, label, type = 'product') {
+  const newName = prompt('Enter new category ID:', name);
+  const newLabel = prompt('Enter new display name:', label);
+  
+  if (!newName || !newLabel) {
+    return;
+  }
+  
+  // Validate category name format
+  if (!/^[a-z_]+$/.test(newName)) {
+    showToast('Category ID must contain only lowercase letters and underscores', 'error');
+    return;
+  }
+  
+  try {
+    const action = type === 'product' ? 'update_product_category' : 'update_package_category';
+    const response = await fetch(`api.php?action=${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: id,
+        name: newName,
+        label: newLabel
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      showToast(`${type === 'product' ? 'Product' : 'Package'} category updated successfully!`);
+      if (type === 'product') {
+        renderProductCategoryList();
+        loadProductCategories();
+      } else {
+        renderPackageCategoryList();
+        loadPackageCategories();
+      }
+    } else {
+      showToast(`Error updating category: ${result.error || 'Unknown error'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error updating category:', error);
+    showToast('Error updating category', 'error');
+  }
+}
+
+async function deleteCategory(id, name, type = 'product') {
+  showConfirmation(`Are you sure you want to delete the category "${name}"? This action cannot be undone.`, async () => {
+    try {
+      const action = type === 'product' ? 'delete_product_category' : 'delete_package_category';
+      const response = await fetch(`api.php?action=${action}&id=${id}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        showToast(`${type === 'product' ? 'Product' : 'Package'} category deleted successfully!`);
+        if (type === 'product') {
+          renderProductCategoryList();
+          loadProductCategories();
+        } else {
+          renderPackageCategoryList();
+          loadPackageCategories();
+        }
+      } else {
+        showToast(`Error deleting category: ${result.error || 'Unknown error'}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      showToast('Error deleting category', 'error');
+    }
+  });
+}
+
+// Render category management lists
+function renderProductCategoryList() {
+  const container = document.getElementById('categoryList');
+  if (!container) return;
+  
+  if (!productCategories.length) {
+    container.innerHTML = '<p class="text-gray-500 text-sm">No product categories found.</p>';
+    return;
+  }
+  
+  const tableHTML = `
+    <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
+      <thead>
+        <tr class="bg-gray-50">
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Category ID</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Display Name</th>
+          <th class="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${productCategories.map(category => `
+          <tr class="hover:bg-gray-50">
+            <td class="border border-gray-300 px-4 py-3 text-sm font-mono">${category.name || category.id}</td>
+            <td class="border border-gray-300 px-4 py-3 text-sm">${category.label || category.name}</td>
+            <td class="border border-gray-300 px-4 py-3 text-center">
+              <div class="flex justify-center space-x-2">
+                <button onclick="editCategory('${category.id}', '${category.name}', '${category.label}', 'product')" class="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-1 rounded transition-colors duration-200">Edit</button>
+                <button onclick="deleteCategory('${category.id}', '${category.label}', 'product')" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition-colors duration-200">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  
+  container.innerHTML = tableHTML;
+}
+
+function renderPackageCategoryList() {
+  const container = document.getElementById('packageCategoryList');
+  if (!container) return;
+  
+  if (!packageCategories.length) {
+    container.innerHTML = '<p class="text-gray-500 text-sm">No package categories found.</p>';
+    return;
+  }
+  
+  const tableHTML = `
+    <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
+      <thead>
+        <tr class="bg-gray-50">
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Category ID</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Display Name</th>
+          <th class="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${packageCategories.map(category => `
+          <tr class="hover:bg-gray-50">
+            <td class="border border-gray-300 px-4 py-3 text-sm font-mono">${category.name || category.id}</td>
+            <td class="border border-gray-300 px-4 py-3 text-sm">${category.label || category.name}</td>
+            <td class="border border-gray-300 px-4 py-3 text-center">
+              <div class="flex justify-center space-x-2">
+                <button onclick="editCategory('${category.id}', '${category.name}', '${category.label}', 'package')" class="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-1 rounded transition-colors duration-200">Edit</button>
+                <button onclick="deleteCategory('${category.id}', '${category.label}', 'package')" class="bg-red-600 hover:bg-red-700 text-white text-xs px-1 rounded transition-colors duration-200">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  
+  container.innerHTML = tableHTML;
 }
 
 // Export functions
