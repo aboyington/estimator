@@ -32,6 +32,93 @@ function confirmAction() {
     closeConfirmationModal();
 }
 
+// Global input modal functions
+let inputModalCallback = null;
+let inputModalValues = {};
+
+function showInputModal(title, fields, callback) {
+    document.getElementById('inputModalTitle').textContent = title;
+    inputModalCallback = callback;
+    inputModalValues = {};
+    
+    // Create form fields dynamically
+    const content = document.getElementById('inputModalContent');
+    content.innerHTML = '';
+    
+    fields.forEach((field, index) => {
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'mb-4';
+        
+        const label = document.createElement('label');
+        label.className = 'block text-sm font-medium text-gray-700 mb-2';
+        label.textContent = field.label;
+        
+        const input = document.createElement('input');
+        input.type = field.type || 'text';
+        input.id = `inputModal_${field.name}`;
+        input.value = field.value || '';
+        input.placeholder = field.placeholder || '';
+        input.className = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent';
+        
+        if (field.required) {
+            input.required = true;
+        }
+        
+        fieldDiv.appendChild(label);
+        fieldDiv.appendChild(input);
+        
+        if (field.hint) {
+            const hint = document.createElement('small');
+            hint.className = 'text-gray-500 text-xs mt-1 block';
+            hint.textContent = field.hint;
+            fieldDiv.appendChild(hint);
+        }
+        
+        content.appendChild(fieldDiv);
+        
+        // Focus on first input
+        if (index === 0) {
+            setTimeout(() => input.focus(), 100);
+        }
+    });
+    
+    document.getElementById('inputModal').classList.remove('hidden');
+}
+
+function closeInputModal() {
+    document.getElementById('inputModal').classList.add('hidden');
+    inputModalCallback = null;
+    inputModalValues = {};
+}
+
+function confirmInputAction() {
+    // Collect all input values
+    const inputs = document.querySelectorAll('#inputModalContent input');
+    const values = {};
+    let allValid = true;
+    
+    inputs.forEach(input => {
+        const fieldName = input.id.replace('inputModal_', '');
+        values[fieldName] = input.value.trim();
+        
+        // Check required fields
+        if (input.required && !input.value.trim()) {
+            allValid = false;
+            input.focus();
+        }
+    });
+    
+    if (!allValid) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    if (inputModalCallback) {
+        inputModalCallback(values);
+    }
+    closeInputModal();
+}
+
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
@@ -268,6 +355,39 @@ function updateDynamicContent(settings) {
   document.getElementById(
     'headerTitle'
   ).textContent = `${companyName} - Estimate Generator`;
+
+  // Update footer
+  updateFooter(companyName);
+}
+
+// Footer update function
+function updateFooter(companyName = 'Udora Safety') {
+  const currentYear = new Date().getFullYear();
+  
+  // Update company name in footer
+  const footerCompanyElement = document.getElementById('footerCompanyName');
+  if (footerCompanyElement) {
+    footerCompanyElement.textContent = companyName;
+  }
+  
+  // Update year in footer
+  const footerYearElement = document.getElementById('footerYear');
+  if (footerYearElement) {
+    footerYearElement.textContent = currentYear;
+  }
+  
+  // Update version number (you can fetch this dynamically if needed)
+  updateVersionNumber();
+}
+
+// Version number update function
+function updateVersionNumber() {
+  const versionElement = document.getElementById('appVersion');
+  if (versionElement) {
+    // You can either hardcode this or fetch it dynamically from package.json or API
+    const currentVersion = 'v1.2.2';
+    versionElement.textContent = currentVersion;
+  }
 }
 
 // Line Items
@@ -1562,48 +1682,64 @@ async function addPackageCategory() {
 }
 
 async function editCategory(id, name, label, type = 'product') {
-  const newName = prompt('Enter new category ID:', name);
-  const newLabel = prompt('Enter new display name:', label);
-  
-  if (!newName || !newLabel) {
-    return;
-  }
-  
-  // Validate category name format
-  if (!/^[a-z_]+$/.test(newName)) {
-    showToast('Category ID must contain only lowercase letters and underscores', 'error');
-    return;
-  }
-  
-  try {
-    const action = type === 'product' ? 'update_product_category' : 'update_package_category';
-    const response = await fetch(`api.php?action=${action}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: id,
-        name: newName,
-        label: newLabel
-      })
-    });
-    
-    const result = await response.json();
-    if (result.success) {
-      showToast(`${type === 'product' ? 'Product' : 'Package'} category updated successfully!`);
-      if (type === 'product') {
-        renderProductCategoryList();
-        loadProductCategories();
-      } else {
-        renderPackageCategoryList();
-        loadPackageCategories();
-      }
-    } else {
-      showToast(`Error updating category: ${result.error || 'Unknown error'}`, 'error');
+  const fields = [
+    {
+      name: 'name',
+      label: 'Category ID',
+      value: name,
+      placeholder: 'e.g., access_control',
+      hint: 'Only lowercase letters and underscores allowed',
+      required: true
+    },
+    {
+      name: 'label', 
+      label: 'Display Name',
+      value: label,
+      placeholder: 'e.g., Access Control Systems',
+      required: true
     }
-  } catch (error) {
-    console.error('Error updating category:', error);
-    showToast('Error updating category', 'error');
-  }
+  ];
+  
+  showInputModal(`Edit ${type === 'product' ? 'Product' : 'Package'} Category`, fields, async (values) => {
+    const newName = values.name;
+    const newLabel = values.label;
+    
+    // Validate category name format
+    if (!/^[a-z_]+$/.test(newName)) {
+      showToast('Category ID must contain only lowercase letters and underscores', 'error');
+      return;
+    }
+    
+    try {
+      const action = type === 'product' ? 'update_product_category' : 'update_package_category';
+      const response = await fetch(`api.php?action=${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: id,
+          name: newName,
+          label: newLabel
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        showToast(`${type === 'product' ? 'Product' : 'Package'} category updated successfully!`);
+        if (type === 'product') {
+          renderProductCategoryList();
+          loadProductCategories();
+        } else {
+          renderPackageCategoryList();
+          loadPackageCategories();
+        }
+      } else {
+        showToast(`Error updating category: ${result.error || 'Unknown error'}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+      showToast('Error updating category', 'error');
+    }
+  });
 }
 
 async function deleteCategory(id, name, type = 'product') {
@@ -2057,6 +2193,9 @@ document.addEventListener('DOMContentLoaded', function () {
   setTimeout(() => {
     addLineItem();
   }, 100);
+
+  // Initialize footer with default values
+  updateFooter();
 
   // Enter key for login
   document

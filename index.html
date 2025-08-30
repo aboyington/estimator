@@ -108,7 +108,7 @@
       }
     </style>
   </head>
-  <body class="bg-brand-light text-gray-700 font-sans">
+  <body class="bg-brand-light text-gray-700 font-sans min-h-screen flex flex-col">
     <!-- Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-linear-to-br from-udora-600 to-udora-500 flex items-center justify-center z-50">
       <div class="bg-white p-8 rounded-card shadow-modal text-center min-w-[300px]">
@@ -136,7 +136,7 @@
     </div>
 
     <!-- Main Application -->
-    <div id="mainApp" class="hidden">
+    <div id="mainApp" class="hidden min-h-screen flex flex-col">
       <!-- Headless UI Navigation Header -->
       <header class="bg-white shadow">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -248,7 +248,7 @@
       </header>
 
       <!-- Main Container -->
-      <div class="max-w-7xl mx-auto px-4 py-8 lg:px-8">
+      <div class="flex-1 max-w-7xl mx-auto px-4 py-8 lg:px-8">
         
         <!-- Estimate Section -->
         <div id="estimateSection" class="section bg-white rounded-card shadow-card p-8 mb-8 active">
@@ -881,6 +881,20 @@
         </div>
         
       </div>
+
+      <!-- Footer -->
+      <footer class="bg-gray-800 text-white py-4 px-4 mt-auto" style="background-color: #1f2937;">
+        <div class="mx-auto max-w-7xl">
+          <div class="flex justify-between items-center text-sm">
+            <div>
+              <span id="footerCompanyName">Udora Safety</span> Estimator © <span id="footerYear">2025</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="appVersion" class="bg-white/20 px-2 py-1 rounded text-xs font-mono">v1.2.2</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
 
     <!-- Toast Container -->
@@ -1035,6 +1049,28 @@
         </div>
       </div>
     </div>
+
+    <!-- Input Modal for styled prompts -->
+    <div id="inputModal" class="hidden fixed inset-0 bg-black/80 z-2000">
+      <div class="bg-white mx-auto my-[20%] w-[90%] max-w-[500px] rounded-card overflow-hidden">
+        <div class="p-4 bg-udora-600 text-white flex items-center justify-between">
+          <h3 id="inputModalTitle" class="text-lg font-semibold">Input Required</h3>
+          <button onclick="closeInputModal()" class="text-white text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div id="inputModalContent">
+              <!-- Dynamic content will be inserted here -->
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" onclick="closeInputModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">Cancel</button>
+              <button type="button" id="inputModalOkButton" onclick="confirmInputAction()" class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- Include JavaScript -->
     <script src="tailwind-app.js?v=2.1"></script>
