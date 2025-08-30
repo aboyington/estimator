@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="pageTitle">Estimate Generator</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'udora': {
+                50: '#f0f4f8',
+                100: '#dae8f0',
+                200: '#b8d1e0',
+                300: '#8fb5cc',
+                400: '#6a95b5',
+                500: '#2a5298',
+                600: '#1e3c72',
+                700: '#1a3461',
+                800: '#162b52',
+                900: '#132545',
+              },
+              'brand': {
+                primary: '#1e3c72',
+                secondary: '#2a5298',
+                light: '#f5f7fa',
+              }
+            },
+            fontFamily: {
+              'sans': ['Segoe UI', 'Tahoma', 'Geneva', 'Verdana', 'sans-serif'],
+            },
+            boxShadow: {
+              'card': '0 2px 10px rgba(0, 0, 0, 0.1)',
+              'modal': '0 10px 30px rgba(0, 0, 0, 0.2)',
+            },
+            borderRadius: {
+              'card': '10px',
+            },
+            animation: {
+              'toast': 'toast 0.5s ease-in-out',
+            },
+            keyframes: {
+              toast: {
+                '0%': { opacity: '0', transform: 'translateX(100%)' },
+                '100%': { opacity: '1', transform: 'translateX(0)' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Custom styles for components that need specific behavior -->
+    <style>
+      /* Toast animations */
+      .toast {
+        opacity: 0;
+        transform: translateX(100%);
+        transition: opacity 0.5s, transform 0.5s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      
+      /* Sortable table headers */
+      th.sortable {
+        cursor: pointer;
+        position: relative;
+      }
+      th.sortable::after {
+        content: '';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        margin-top: -8px;
+        border: 4px solid transparent;
+      }
+      th.sort-asc::after {
+        border-bottom-color: #333;
+      }
+      th.sort-desc::after {
+        border-top-color: #333;
+      }
+      
+      /* Expandable description cells */
+      .description-cell .short-desc {
+        display: inline;
+      }
+      .description-cell .full-desc {
+        display: none;
+      }
+      .description-cell.expanded .short-desc {
+        display: none;
+      }
+      .description-cell.expanded .full-desc {
+        display: inline;
+      }
+      
+      /* Form and input styles */
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+      }
+      
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .checkbox-group {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      /* Line items styling */
+      .line-items {
+        margin: 2rem 0;
+      }
+      
+      .line-item {
+        display: grid;
+        grid-template-columns: 2fr 0.5fr 1fr 1fr 0.75fr 1fr 0.5fr;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+      }
+      
+      .line-item-header {
+        background: #f8f9fa;
+        padding: 0.75rem 0.5rem;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+      }
+      
+      .totals {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        font-size: 1.1rem;
+      }
+      
+      .totals-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+      
+      .total-final {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e3c72;
+        border-top: 2px solid #1e3c72;
+        padding-top: 0.75rem;
+        margin-top: 0.75rem;
+      }
+    </style>
+  </head>
+  <body class="bg-brand-light text-gray-700 font-sans">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-udora-600 to-udora-500 flex items-center justify-center z-50">
+      <div class="bg-white p-8 rounded-card shadow-modal text-center min-w-[300px]">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Estimator</h2>
+        <p class="text-gray-600 my-4">
+          Please enter your password to access the system
+        </p>
+        <input
+          type="password"
+          id="passwordInput"
+          placeholder="Password"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent mb-4 text-base"
+        />
+        <button 
+          onclick="login()" 
+          class="w-full bg-udora-600 hover:bg-udora-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+        >
+          Login
+        </button>
+        <div
+          id="loginError"
+          class="text-red-600 mt-4 hidden"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+      <!-- Header -->
+      <header class="bg-udora-600 text-white px-4 py-4 lg:px-8">
+        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+          <h1 id="headerTitle" class="text-xl lg:text-2xl font-semibold text-center lg:text-left">
+            Udora Safety - Estimate Generator
+          </h1>
+          
+          <!-- Navigation -->
+          <nav class="flex flex-wrap justify-center lg:justify-end gap-2 lg:gap-4">
+            <button class="nav-btn px-3 py-2 lg:px-4 lg:py-2 text-sm lg:text-base border border-white rounded-lg hover:bg-white hover:text-udora-600 transition-all duration-300 active" 
+                    onclick="showSection('estimate')">
+              New Estimate
+            </button>
+            <button class="nav-btn px-3 py-2 lg:px-4 lg:py-2 text-sm lg:text-base border border-white rounded-lg hover:bg-white hover:text-udora-600 transition-all duration-300" 
+                    onclick="showSection('history')">
+              History
+            </button>
+            <button class="nav-btn px-3 py-2 lg:px-4 lg:py-2 text-sm lg:text-base border border-white rounded-lg hover:bg-white hover:text-udora-600 transition-all duration-300" 
+                    onclick="showSection('products')">
+              Products & Services
+            </button>
+            <button class="nav-btn px-3 py-2 lg:px-4 lg:py-2 text-sm lg:text-base border border-white rounded-lg hover:bg-white hover:text-udora-600 transition-all duration-300" 
+                    onclick="showSection('packages')">
+              Packages
+            </button>
+            <button class="nav-btn px-3 py-2 lg:px-4 lg:py-2 text-sm lg:text-base border border-white rounded-lg hover:bg-white hover:text-udora-600 transition-all duration-300" 
+                    onclick="showSection('settings')">
+              Settings
+            </button>
+            <button class="nav-btn px-3 py-2 lg:px-4 lg:py-2 text-sm lg:text-base border border-white rounded-lg hover:bg-white hover:text-udora-600 transition-all duration-300" 
+                    onclick="logout()">
+              Logout
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Main Container -->
+      <div class="max-w-7xl mx-auto px-4 py-8 lg:px-8">
+        
+        <!-- Estimate Section -->
+        <div id="estimateSection" class="section bg-white rounded-card shadow-card p-8 mb-8 active">
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">Create New Estimate</h2>
+
+          <!-- Client Information -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Client Information
+            </h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Client Name *</label>
+                <input 
+                  type="text" 
+                  id="clientName" 
+                  required 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                />
+              </div>
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Client Email</label>
+                <input 
+                  type="email" 
+                  id="clientEmail" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                />
+              </div>
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Client Phone</label>
+                <input 
+                  type="tel" 
+                  id="clientPhone" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div class="form-group mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Project Address</label>
+              <textarea 
+                id="projectAddress" 
+                rows="3" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Project Details -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Project Details
+            </h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                <select 
+                  id="projectType" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                >
+                  <option value="residential">Residential</option>
+                  <option value="commercial">Commercial</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Estimate Status</label>
+                <select 
+                  id="estimateStatus" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="sent">Sent</option>
+                  <option value="approved">Approved</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Internal Notes</label>
+              <textarea
+                id="estimateNotes"
+                rows="3"
+                placeholder="Add any internal notes for this estimate..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Line Items -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Line Items
+            </h3>
+            <div class="line-items">
+              <div class="line-item line-item-header hidden lg:grid">
+                <div>Description</div>
+                <div>Qty</div>
+                <div>Unit Cost</div>
+                <div>Category</div>
+                <div>Markup %</div>
+                <div>Total</div>
+                <div>Action</div>
+              </div>
+              <div id="lineItemsList"></div>
+              <button 
+                type="button" 
+                onclick="addLineItem()" 
+                class="mt-4 bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+              >
+                Add Line Item
+              </button>
+            </div>
+          </div>
+
+          <!-- Totals -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Totals
+            </h3>
+            <div class="form-group mb-4">
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="applySalesCommission"
+                    onchange="calculateTotals()"
+                    class="h-4 w-4 text-udora-600 focus:ring-udora-500 border-gray-300 rounded"
+                  />
+                  <label for="applySalesCommission" class="text-sm text-gray-700">
+                    Apply Sales Rep Commission (<span id="salesCommissionDisplay">0</span>%)
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="totals">
+              <div class="totals-row">
+                <span>Subtotal:</span>
+                <span id="subtotalAmount" class="font-semibold">$0.00</span>
+              </div>
+              <div
+                class="totals-row hidden"
+                id="salesCommissionRow"
+              >
+                <span>Sales Commission (<span id="salesCommissionRateDisplay">5</span>%):</span>
+                <span id="salesCommissionAmount" class="font-semibold">$0.00</span>
+              </div>
+              <div class="totals-row">
+                <span>Tax (<span id="taxRateDisplay">13</span>%):</span>
+                <span id="taxAmount" class="font-semibold">$0.00</span>
+              </div>
+              <div class="totals-row total-final">
+                <span>Total:</span>
+                <span id="totalAmount">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-end">
+            <button 
+              onclick="saveEstimate()" 
+              class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              Save Estimate
+            </button>
+            <button 
+              onclick="previewEstimate()" 
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              Preview
+            </button>
+          </div>
+        </div>
+        
+        <!-- Other sections will be added here -->
+        <!-- Placeholder for History, Products, Packages, Settings sections -->
+        
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
+    <!-- Status Badges (moved to utility classes) -->
+    <style>
+      .status-badge {
+        @apply px-2 py-1 rounded-full text-xs font-semibold uppercase text-white;
+      }
+      .status-draft {
+        @apply bg-gray-500;
+      }
+      .status-sent {
+        @apply bg-blue-500;
+      }
+      .status-approved {
+        @apply bg-green-500;
+      }
+      
+      /* Active nav button styling */
+      .nav-btn.active {
+        @apply bg-white text-udora-600;
+      }
+    </style>
+
