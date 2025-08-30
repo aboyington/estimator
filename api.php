@@ -4,8 +4,33 @@
 session_start();
 header('Content-Type: application/json');
 
-// Simple authentication check
-if (!isset($_SESSION['authenticated']) && $_REQUEST['action'] !== 'login') {
+// Helper function to hash passwords
+function hashPassword($password) {
+    return password_hash($password, PASSWORD_DEFAULT);
+}
+
+// Helper function to verify passwords
+function verifyPassword($password, $hash) {
+    return password_verify($password, $hash);
+}
+
+// Helper function to get current user ID from session
+function getCurrentUserId() {
+    return $_SESSION['user_id'] ?? null;
+}
+
+// Helper function to get current user info
+function getCurrentUser($db) {
+    $userId = getCurrentUserId();
+    if (!$userId) return null;
+    
+    $stmt = $db->prepare("SELECT id, username, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1");
+    $stmt->execute([$userId]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Authentication check - allow login, register, and check_auth without authentication
+if (!isset($_SESSION['authenticated']) && !in_array($_REQUEST['action'] ?? '', ['login', 'register', 'check_auth'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Not authenticated']);
     exit;
@@ -26,13 +51,110 @@ try {
 
     switch ($action) {
         case 'login':
-            $password = $_POST['password'] ?? '';
-            // Change this password as needed
-            if ($password === 'udora12345') {
+            $data = json_decode(file_get_contents('php://input'), true);
+            $username = trim($data['username'] ?? '');
+            $password = $data['password'] ?? '';
+            
+            if (empty($username) || empty($password)) {
+                echo json_encode(['success' => false, 'error' => 'Username and password are required']);
+                break;
+            }
+            
+            // Find user by username or email
+            $stmt = $db->prepare("SELECT id, username, email, password_hash, first_name, last_name FROM users WHERE (username = ? OR email = ?) AND is_active = 1");
+            $stmt->execute([$username, $username]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($user && verifyPassword($password, $user['password_hash'])) {
                 $_SESSION['authenticated'] = true;
-                echo json_encode(['success' => true]);
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['user_email'] = $user['email'];
+                
+                echo json_encode([
+                    'success' => true,
+                    'user' => [
+                        'id' => $user['id'],
+                        'username' => $user['username'],
+                        'email' => $user['email'],
+                        'first_name' => $user['first_name'],
+                        'last_name' => $user['last_name']
+                    ]
+                ]);
             } else {
-                echo json_encode(['success' => false, 'error' => 'Invalid password']);
+                echo json_encode(['success' => false, 'error' => 'Invalid username/email or password']);
+            }
+            break;
+            
+        case 'register':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $username = trim($data['username'] ?? '');
+            $email = trim($data['email'] ?? '');
+            $password = $data['password'] ?? '';
+            $firstName = trim($data['first_name'] ?? '');
+            $lastName = trim($data['last_name'] ?? '');
+            
+            // Validation
+            if (empty($username) || empty($email) || empty($password)) {
+                echo json_encode(['success' => false, 'error' => 'Username, email, and password are required']);
+                break;
+            }
+            
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => false, 'error' => 'Invalid email format']);
+                break;
+            }
+            
+            if (strlen($password) < 6) {
+                echo json_encode(['success' => false, 'error' => 'Password must be at least 6 characters long']);
+                break;
+            }
+            
+            // Check if username or email already exists
+            $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE username = ? OR email = ?");
+            $stmt->execute([$username, $email]);
+            
+            if ($stmt->fetchColumn() > 0) {
+                echo json_encode(['success' => false, 'error' => 'Username or email already exists']);
+                break;
+            }
+            
+            // Create new user
+            $passwordHash = hashPassword($password);
+            $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$username, $email, $passwordHash, $firstName, $lastName]);
+            
+            $userId = $db->lastInsertId();
+            
+            // Auto-login after registration
+            $_SESSION['authenticated'] = true;
+            $_SESSION['user_id'] = $userId;
+            $_SESSION['username'] = $username;
+            $_SESSION['user_email'] = $email;
+            
+            echo json_encode([
+                'success' => true,
+                'user' => [
+                    'id' => $userId,
+                    'username' => $username,
+                    'email' => $email,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName
+                ]
+            ]);
+            break;
+            
+        case 'check_auth':
+            if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+                $user = getCurrentUser($db);
+                if ($user) {
+                    echo json_encode(['authenticated' => true, 'user' => $user]);
+                } else {
+                    session_destroy();
+                    echo json_encode(['authenticated' => false]);
+                }
+            } else {
+                echo json_encode(['authenticated' => false]);
             }
             break;
 
@@ -61,12 +183,13 @@ try {
 
         case 'save_estimate':
             $data = json_decode(file_get_contents('php://input'), true);
+            $userId = getCurrentUserId();
             
             // Generate estimate number
             $estimateNumber = 'EST-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
             
             // Insert estimate
-            $stmt = $db->prepare("INSERT INTO estimates (estimate_number, client_name, client_email, client_phone, project_address, project_type, system_types, subtotal, tax_amount, total_amount, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $db->prepare("INSERT INTO estimates (estimate_number, client_name, client_email, client_phone, project_address, project_type, system_types, subtotal, tax_amount, total_amount, notes, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $estimateNumber,
                 $data['client_name'],
@@ -79,7 +202,8 @@ try {
                 $data['tax_amount'],
                 $data['total_amount'],
                 $data['notes'] ?? '',
-                $data['status'] ?? 'draft'
+                $data['status'] ?? 'draft',
+                $userId
             ]);
             
             $estimateId = $db->lastInsertId();
@@ -102,7 +226,13 @@ try {
             break;
 
         case 'get_estimates':
-            $stmt = $db->query("SELECT id, estimate_number, client_name, project_type, total_amount, status, created_at FROM estimates ORDER BY created_at DESC LIMIT 50");
+            $stmt = $db->query("
+                SELECT e.id, e.estimate_number, e.client_name, e.project_type, e.total_amount, e.status, e.created_at,
+                       u.username as created_by_username, u.first_name as created_by_first_name, u.last_name as created_by_last_name
+                FROM estimates e
+                LEFT JOIN users u ON e.created_by = u.id
+                ORDER BY e.created_at DESC LIMIT 50
+            ");
             $estimates = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode($estimates);
             break;
@@ -849,6 +979,104 @@ try {
             $stmt->execute([$id]);
             
             echo json_encode(['success' => true]);
+            break;
+
+        // User management endpoints
+        case 'get_current_user':
+            $user = getCurrentUser($db);
+            if ($user) {
+                echo json_encode(['success' => true, 'user' => $user]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'User not found']);
+            }
+            break;
+            
+        case 'update_profile':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $userId = getCurrentUserId();
+            
+            if (!$userId) {
+                echo json_encode(['success' => false, 'error' => 'Not authenticated']);
+                break;
+            }
+            
+            $firstName = trim($data['first_name'] ?? '');
+            $lastName = trim($data['last_name'] ?? '');
+            $email = trim($data['email'] ?? '');
+            
+            if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => false, 'error' => 'Valid email is required']);
+                break;
+            }
+            
+            // Check if email is already used by another user
+            $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE email = ? AND id != ?");
+            $stmt->execute([$email, $userId]);
+            
+            if ($stmt->fetchColumn() > 0) {
+                echo json_encode(['success' => false, 'error' => 'Email is already in use']);
+                break;
+            }
+            
+            $stmt = $db->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([$firstName, $lastName, $email, $userId]);
+            
+            // Update session email
+            $_SESSION['user_email'] = $email;
+            
+            echo json_encode(['success' => true]);
+            break;
+            
+        case 'change_password':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $userId = getCurrentUserId();
+            
+            if (!$userId) {
+                echo json_encode(['success' => false, 'error' => 'Not authenticated']);
+                break;
+            }
+            
+            $currentPassword = $data['current_password'] ?? '';
+            $newPassword = $data['new_password'] ?? '';
+            $confirmPassword = $data['confirm_password'] ?? '';
+            
+            if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
+                echo json_encode(['success' => false, 'error' => 'All password fields are required']);
+                break;
+            }
+            
+            if ($newPassword !== $confirmPassword) {
+                echo json_encode(['success' => false, 'error' => 'New passwords do not match']);
+                break;
+            }
+            
+            if (strlen($newPassword) < 6) {
+                echo json_encode(['success' => false, 'error' => 'New password must be at least 6 characters long']);
+                break;
+            }
+            
+            // Verify current password
+            $stmt = $db->prepare("SELECT password_hash FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$user || !verifyPassword($currentPassword, $user['password_hash'])) {
+                echo json_encode(['success' => false, 'error' => 'Current password is incorrect']);
+                break;
+            }
+            
+            // Update password
+            $newPasswordHash = hashPassword($newPassword);
+            $stmt = $db->prepare("UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([$newPasswordHash, $userId]);
+            
+            echo json_encode(['success' => true]);
+            break;
+            
+        case 'get_all_users':
+            $stmt = $db->query("SELECT id, username, email, first_name, last_name, is_active, created_at FROM users ORDER BY username ASC");
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($users);
             break;
 
         case 'import_products':

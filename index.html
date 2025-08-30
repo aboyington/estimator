@@ -121,26 +121,105 @@
   <body class="bg-white text-gray-700 font-sans min-h-screen flex flex-col">
     <!-- Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-linear-to-br from-udora-600 to-udora-500 flex items-center justify-center z-50">
-      <div class="bg-white p-8 rounded-card shadow-modal text-center min-w-[300px]">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Estimator</h2>
-        <p class="text-gray-600 my-4">
-          Please enter your password to access the system
-        </p>
-        <input
-          type="password"
-          id="passwordInput"
-          placeholder="Password"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent mb-4 text-base"
-        />
-        <button 
-          onclick="login()" 
-          class="w-full bg-udora-600 hover:bg-udora-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-        >
-          Login
-        </button>
+      <div class="bg-white p-8 rounded-card shadow-modal text-center min-w-[400px] max-w-md">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Udora Safety Estimator</h2>
+        
+        <!-- Login/Register Toggle -->
+        <div class="flex mb-6 bg-gray-100 p-1 rounded-lg">
+          <button 
+            id="loginTab" 
+            class="flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors duration-200 bg-white text-udora-600 shadow-sm"
+            onclick="showLoginForm()"
+          >
+            Login
+          </button>
+          <button 
+            id="registerTab" 
+            class="flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors duration-200 text-gray-500 hover:text-gray-700"
+            onclick="showRegisterForm()"
+          >
+            Register
+          </button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="space-y-4">
+          <input
+            type="text"
+            id="loginUsername"
+            placeholder="Username or Email"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+          />
+          <input
+            type="password"
+            id="loginPassword"
+            placeholder="Password"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+          />
+          <button 
+            onclick="login()" 
+            class="w-full bg-udora-600 hover:bg-udora-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+          >
+            Login
+          </button>
+        </div>
+
+        <!-- Registration Form -->
+        <div id="registerForm" class="space-y-4 hidden">
+          <div class="grid grid-cols-2 gap-4">
+            <input
+              type="text"
+              id="registerFirstName"
+              placeholder="First Name"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+            />
+            <input
+              type="text"
+              id="registerLastName"
+              placeholder="Last Name"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+            />
+          </div>
+          <input
+            type="text"
+            id="registerUsername"
+            placeholder="Username"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+          />
+          <input
+            type="email"
+            id="registerEmail"
+            placeholder="Email Address"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+          />
+          <input
+            type="password"
+            id="registerPassword"
+            placeholder="Password (min 6 characters)"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+          />
+          <input
+            type="password"
+            id="registerConfirmPassword"
+            placeholder="Confirm Password"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent text-base"
+          />
+          <button 
+            onclick="register()" 
+            class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+          >
+            Create Account
+          </button>
+        </div>
+        
         <div
-          id="loginError"
-          class="text-red-600 mt-4 hidden"
+          id="authError"
+          class="text-red-600 mt-4 text-sm hidden"
+        ></div>
+        
+        <div
+          id="authSuccess"
+          class="text-green-600 mt-4 text-sm hidden"
         ></div>
       </div>
     </div>

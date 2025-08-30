@@ -134,43 +134,185 @@ function showToast(message, type = 'success') {
   }, 3000);
 }
 
+// Global variables for current user
+let currentUser = null;
+
 // Authentication
+function showLoginForm() {
+  document.getElementById('loginTab').classList.add('bg-white', 'text-udora-600', 'shadow-sm');
+  document.getElementById('loginTab').classList.remove('text-gray-500');
+  document.getElementById('registerTab').classList.remove('bg-white', 'text-udora-600', 'shadow-sm');
+  document.getElementById('registerTab').classList.add('text-gray-500');
+  
+  document.getElementById('loginForm').classList.remove('hidden');
+  document.getElementById('registerForm').classList.add('hidden');
+  
+  hideAuthMessages();
+}
+
+function showRegisterForm() {
+  document.getElementById('registerTab').classList.add('bg-white', 'text-udora-600', 'shadow-sm');
+  document.getElementById('registerTab').classList.remove('text-gray-500');
+  document.getElementById('loginTab').classList.remove('bg-white', 'text-udora-600', 'shadow-sm');
+  document.getElementById('loginTab').classList.add('text-gray-500');
+  
+  document.getElementById('registerForm').classList.remove('hidden');
+  document.getElementById('loginForm').classList.add('hidden');
+  
+  hideAuthMessages();
+}
+
+function hideAuthMessages() {
+  document.getElementById('authError').classList.add('hidden');
+  document.getElementById('authSuccess').classList.add('hidden');
+}
+
+function showAuthError(message) {
+  document.getElementById('authError').textContent = message;
+  document.getElementById('authError').classList.remove('hidden');
+  document.getElementById('authSuccess').classList.add('hidden');
+}
+
+function showAuthSuccess(message) {
+  document.getElementById('authSuccess').textContent = message;
+  document.getElementById('authSuccess').classList.remove('hidden');
+  document.getElementById('authError').classList.add('hidden');
+}
+
 async function login() {
-  const password = document.getElementById('passwordInput').value;
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!username || !password) {
+    showAuthError('Username and password are required');
+    return;
+  }
+
   console.log('Attempting login...');
 
   try {
-    const response = await fetch('api.php', {
+    const response = await fetch('api.php?action=login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=login&password=${encodeURIComponent(password)}`,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
     });
 
     console.log('Response status:', response.status);
     const result = await response.json();
     console.log('Response data:', result);
 
-    if (result.success) {
+    if (result.success && result.user) {
+      currentUser = result.user;
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
       loadSettings();
       loadEstimateHistory();
+      showToast(`Welcome back, ${currentUser.first_name || currentUser.username}!`);
     } else {
-      document.getElementById('loginError').textContent =
-        result.error || 'Login failed';
-      document.getElementById('loginError').classList.remove('hidden');
+      showAuthError(result.error || 'Login failed');
     }
   } catch (error) {
     console.error('Login error:', error);
-    document.getElementById('loginError').textContent =
-      'Connection error';
-    document.getElementById('loginError').classList.remove('hidden');
+    showAuthError('Connection error. Please try again.');
+  }
+}
+
+async function register() {
+  const username = document.getElementById('registerUsername').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const password = document.getElementById('registerPassword').value;
+  const confirmPassword = document.getElementById('registerConfirmPassword').value;
+  const firstName = document.getElementById('registerFirstName').value.trim();
+  const lastName = document.getElementById('registerLastName').value.trim();
+  
+  // Validation
+  if (!username || !email || !password) {
+    showAuthError('Username, email, and password are required');
+    return;
+  }
+  
+  if (password !== confirmPassword) {
+    showAuthError('Passwords do not match');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showAuthError('Password must be at least 6 characters long');
+    return;
+  }
+
+  console.log('Attempting registration...');
+
+  try {
+    const response = await fetch('api.php?action=register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        username, 
+        email, 
+        password, 
+        first_name: firstName, 
+        last_name: lastName 
+      })
+    });
+
+    const result = await response.json();
+    console.log('Registration response:', result);
+
+    if (result.success && result.user) {
+      currentUser = result.user;
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      loadSettings();
+      loadEstimateHistory();
+      showToast(`Welcome to Udora Safety Estimator, ${currentUser.first_name || currentUser.username}!`);
+    } else {
+      showAuthError(result.error || 'Registration failed');
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    showAuthError('Connection error. Please try again.');
+  }
+}
+
+async function checkAuth() {
+  try {
+    const response = await fetch('api.php?action=check_auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+    
+    if (result.authenticated && result.user) {
+      currentUser = result.user;
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      loadSettings();
+      loadEstimateHistory();
+      return true;
+    } else {
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+      return false;
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('mainApp').classList.add('hidden');
+    return false;
   }
 }
 
 async function logout() {
-  await fetch('api.php?action=logout');
-  location.reload();
+  try {
+    await fetch('api.php?action=logout');
+    currentUser = null;
+    location.reload();
+  } catch (error) {
+    console.error('Logout error:', error);
+    location.reload();
+  }
 }
 
 // Navigation
@@ -2189,20 +2331,60 @@ function getCategoryType(categoryId) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function () {
-  // Add initial line item after a short delay to ensure settings are available
-  setTimeout(() => {
-    addLineItem();
-  }, 100);
+  // Check authentication status first
+  checkAuth().then(isAuthenticated => {
+    if (isAuthenticated) {
+      // Add initial line item after a short delay to ensure settings are available
+      setTimeout(() => {
+        addLineItem();
+      }, 100);
+    }
+  });
 
   // Initialize footer with default values
   updateFooter();
 
-  // Enter key for login
-  document
-    .getElementById('passwordInput')
-    .addEventListener('keypress', function (e) {
+  // Enter key handlers for login forms
+  const loginUsernameInput = document.getElementById('loginUsername');
+  const loginPasswordInput = document.getElementById('loginPassword');
+  
+  if (loginUsernameInput) {
+    loginUsernameInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        loginPasswordInput.focus();
+      }
+    });
+  }
+  
+  if (loginPasswordInput) {
+    loginPasswordInput.addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
         login();
       }
     });
+  }
+  
+  // Enter key handlers for registration form
+  const registerInputs = [
+    'registerFirstName', 'registerLastName', 'registerUsername',
+    'registerEmail', 'registerPassword', 'registerConfirmPassword'
+  ];
+  
+  registerInputs.forEach((inputId, index) => {
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          if (index === registerInputs.length - 1) {
+            // Last input, trigger registration
+            register();
+          } else {
+            // Move to next input
+            const nextInput = document.getElementById(registerInputs[index + 1]);
+            if (nextInput) nextInput.focus();
+          }
+        }
+      });
+    }
+  });
 });
