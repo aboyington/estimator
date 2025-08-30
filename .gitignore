@@ -30,6 +30,7 @@ node_modules/
 *.bak
 _backup/
 _backup
+archive/
 
 # PHP cache
 *.cache

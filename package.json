@@ -1,14 +1,30 @@
 {
-  "name": "udora-safety-estimator",
-  "version": "1.2.0",
-  "description": "Estimate Generator for Udora Safety by Anthony Boyington",
-  "private": true,
-  "scripts": {
-    "version:bump": "./version.sh",
-    "version:patch": "./version.sh patch",
-    "version:minor": "./version.sh minor",
-    "version:major": "./version.sh major"
+  "name": "estimator",
+  "version": "1.0.0",
+  "description": "A comprehensive web application for creating, managing, and tracking estimates for safety systems and services.",
+  "main": "packages.js",
+  "directories": {
+    "doc": "docs"
   },
-  "author": "Anthony Boyington",
-  "license": "MIT"
+  "scripts": {
+    "build": "npx @tailwindcss/cli -i ./src/input.css -o ./dist/output.css --minify",
+    "watch": "npx @tailwindcss/cli -i ./src/input.css -o ./dist/output.css --watch",
+    "dev": "npx @tailwindcss/cli -i ./src/input.css -o ./dist/output.css --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aboyington/estimator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aboyington/estimator/issues"
+  },
+  "homepage": "https://github.com/aboyington/estimator#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.12",
+    "tailwindcss": "^4.1.12"
+  }
 }

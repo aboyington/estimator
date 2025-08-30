@@ -1,93 +1,95 @@
-# Estimator - White-Label Estimate Generator
+# Udora Safety Estimate Generator
 
-A fully customizable estimate generator application built with PHP and SQLite. Perfect for contractors, service providers, and small businesses who need to create professional estimates quickly and efficiently.
+A comprehensive web application for creating, managing, and tracking estimates for safety systems and services.
 
-## Features
+## 🚀 Quick Start
 
-- **White-Label Ready**: Fully customizable branding with company name, logo, and colors
-- **Dynamic Pricing**: Configurable markup percentages for different product categories
-- **Product Management**: Complete CRUD operations for products and services
-- **CSV Import/Export**: Bulk import products and export for backup
-- **Professional Estimates**: Clean, printable estimates with your branding
+1. **Production Version (Tailwind CSS):**
+   - Open `index-tailwind.html` in your browser
+   - Modern, responsive design with Tailwind CSS
+
+2. **Legacy Version:**
+   - Open `index.html` in your browser
+   - Original custom CSS version
+
+## 📁 Project Structure
+
+```
+/estimator/
+├── README.md              # Project overview
+├── index-tailwind.html    # Main application (Tailwind CSS)
+├── index.html             # Legacy version (custom CSS)
+├── tailwind-app.js        # Main JavaScript functionality
+├── packages.js            # Package management functionality
+├── api.php                # Backend API endpoints
+├── estimator.db           # SQLite database
+├── docs/                  # 📁 All documentation
+└── archive/               # 📁 Development & backup files
+    ├── development/       # Dev tools, configs, debug files
+    ├── database-files/    # Database backups & temp files
+    ├── testing/           # Test files & style backups
+    └── _backup/           # Original backup folder
+```
+
+## ✨ Features
+
+- **Estimate Creation**: Build detailed estimates with line items, markup calculations, and totals
+- **Client Management**: Track client information and project details
+- **Product Catalog**: Manage products and services with categories and pricing
+- **Package System**: Create reusable service packages with multiple line items
+- **History & Tracking**: View, edit, and manage estimate history
+- **CSV Operations**: Export and import data for estimates, products, and packages
+- **Settings Management**: Configure company details, tax rates, and markup percentages
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
-- **Secure Access**: Password-protected with session management
-- **History Tracking**: View, edit, and manage all past estimates
 
-## Version
+## 📖 Documentation
 
-Current Version: **v1.1.0**
+All project documentation is located in the `/docs` folder:
 
-### What's New in v1.1.0
-- Complete white-labeling capabilities
-- Dynamic page titles and headers based on company settings
-- Customizable footer with company branding
-- Improved responsive design
-- Enhanced settings management
+- **[Installation Instructions](docs/installation_instructions.md)** - Setup and deployment guide
+- **[Product Requirements](docs/udora_estimator_prd.md)** - Detailed feature specifications  
+- **[Tailwind Migration Guide](docs/TAILWIND_MIGRATION_COMPLETE.md)** - Modern CSS migration details
+- **[Database Performance](docs/database_performance.md)** - Database optimization notes
+- **[Development Guide](docs/WARP.md)** - Technical implementation details
+- **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 
-## Installation
+## 🛠 Technology Stack
 
-1. Clone this repository
-2. Configure your web server to serve the project directory
-3. Run `setup.php` to initialize the database
-4. Access the application through your web browser
-5. Default password: `estimator123` (change this in settings)
+- **Frontend**: HTML5, Tailwind CSS, Vanilla JavaScript
+- **Backend**: PHP 7.4+
+- **Database**: SQLite
+- **Server**: Apache/Nginx with PHP support
 
-## Requirements
+## 🎨 Recent Updates
+
+**✅ Tailwind CSS Migration Complete**
+- Modern utility-first CSS architecture
+- Responsive design across all devices
+- Custom Udora Safety brand colors
+- Improved performance and maintainability
+- All original functionality preserved
+
+## 📋 Requirements
 
 - PHP 7.4 or higher
-- SQLite3 extension
-- Web server (Apache, Nginx, or built-in PHP server)
+- SQLite extension for PHP
+- Web server (Apache, Nginx, or MAMP/XAMPP for development)
+- Modern web browser
 
-## File Structure
+## 🚀 Getting Started
 
-```
-estimator/
-├── index.html          # Main application interface
-├── api.php            # Backend API handling all requests
-├── setup.php          # Database initialization script
-├── package.json       # Project metadata and dependencies
-├── version.sh         # Version management script
-├── docs/              # Documentation folder
-└── README.md          # This file
-```
+1. Clone or download the project files
+2. Set up a local web server (MAMP, XAMPP, or similar)
+3. Place files in your web server's document root
+4. Open `index-tailwind.html` in your browser
+5. Default password is configured in `api.php`
 
-## Configuration
+## 📞 Support
 
-### Company Settings
-- Company Name
-- Contact Information (phone, email)
-- Warranty Terms
-- Payment Terms
-- Tax Rates
-- Default Markup Percentages
+For technical support or questions about the Udora Safety Estimate Generator, please refer to the documentation in the `/docs` folder or contact your system administrator.
 
-### Product Categories
-Manage custom product categories for better organization:
-- Hardware
-- Parts & Materials
-- Labor
-- Custom categories as needed
+---
 
-## Usage
-
-1. **Settings**: Configure your company information and pricing
-2. **Products**: Add your products/services or import via CSV
-3. **Estimates**: Create new estimates with line items
-4. **History**: View and manage all estimates
-5. **Export**: Print or save estimates as needed
-
-## Development
-
-This is a single-page application with:
-- **Frontend**: Vanilla JavaScript, HTML5, CSS3
-- **Backend**: PHP with SQLite database
-- **Authentication**: Session-based with password protection
-- **API**: RESTful endpoints for all operations
-
-## License
-
-© 2025 - All rights reserved
-
-## Support
-
-For support and customization requests, please create an issue in this repository.
+**Version**: 2.0 (Tailwind CSS)  
+**Last Updated**: August 2024  
+**Status**: Production Ready ✅

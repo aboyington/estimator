@@ -1,275 +1,190 @@
-# WARP.md
+# Estimator Project Documentation
 
-This file provides guidance to WARP (warp.dev) when working with code in this repository.
+## Overview
+A comprehensive web application for creating, managing, and tracking estimates for safety systems and services, built with Tailwind CSS v4.0 and vanilla JavaScript.
 
-## Essential Development Commands
+## Technology Stack
+- **Frontend**: HTML5, Tailwind CSS v4.0, Vanilla JavaScript
+- **Server**: Apache (MAMP) on port 80
+- **Build Tools**: Tailwind CLI v4.0, npm
+- **Browser Support**: Safari 16.4+, Chrome 111+, Firefox 128+
 
-### Project Setup & Database
+## Project Structure
+```
+/estimator/
+├── index.html                 # Main application (production-ready)
+├── tailwind-app.js            # Core application JavaScript
+├── packages.js                # Package management functionality
+├── src/
+│   └── input.css              # Tailwind CSS source with custom styles
+├── dist/
+│   └── output.css             # Compiled production CSS (81KB)
+├── package.json               # Build scripts and dependencies
+└── warp.md                    # This documentation file
+```
+
+## Features
+- **Estimate Creation**: Full estimate builder with client info, project details, and line items
+- **History Management**: View, search, and filter past estimates
+- **Product Catalog**: Manage products/services with categories and pricing
+- **Package System**: Create and manage service packages
+- **Settings**: Configure pricing, markup, tax rates, and company information
+- **Export/Import**: CSV functionality for data management
+- **Responsive Design**: Mobile-friendly interface with responsive navigation
+
+## Tailwind CSS v4.0 Setup
+
+### Migration History
+- **Previous**: Using Tailwind CDN (~3MB) - not recommended for production
+- **v3.4 Attempt**: Had class detection issues with standalone binary
+- **v4.0 Success**: Official upgrade tool migration with modern features
+
+### Current Configuration
+**CSS-first configuration** in `src/input.css`:
+```css
+@import "tailwindcss";
+
+@theme {
+  /* Custom color palette */
+  --color-udora-50: #f0f4f8;
+  --color-udora-500: #2a5298;
+  --color-udora-600: #1e3c72;
+  --color-udora-700: #1a3461;
+  --color-brand-light: #f5f7fa;
+  
+  /* Custom design tokens */
+  --font-family-sans: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --radius-card: 10px;
+}
+
+/* Custom component styles */
+.section { display: none; }
+.section.active { display: block; }
+/* ... additional custom styles ... */
+```
+
+### Build Commands
 ```bash
-# Initialize database (run once or after schema changes)
-php setup.php
+# Production build (minified)
+npm run build
 
-# Check database exists and verify structure
-ls -la udora_estimates.db* 
-sqlite3 udora_estimates.db ".schema"
+# Development watch mode
+npm run watch
 
-# Backup database
-cp udora_estimates.db udora_estimates_backup_$(date +%Y%m%d_%H%M%S).db
-
-# Database maintenance
-sqlite3 udora_estimates.db "PRAGMA wal_checkpoint; VACUUM;"
+# Development server
+npm run dev
 ```
 
-### Local Development Server
-```bash
-# Using MAMP (preferred for this project)
-# Place project in /Applications/MAMP/htdocs/estimator/
-# Access via: http://localhost/estimator/
-# Default password: udora12345
+### Performance Benefits
+- **Bundle Size**: 81KB (vs 3MB CDN) - **97% reduction**
+- **Build Speed**: 5x faster full builds, 100x faster incremental builds
+- **Modern CSS**: Uses @property, color-mix(), cascade layers
+- **No CDN Dependency**: Fully self-contained
 
-# Alternative: PHP built-in server for quick testing
-php -S localhost:8080 -t .
-open http://localhost:8080
-```
+## Development Workflow
 
-### Version Management
-```bash
-# Bump version (updates package.json and index.html footer)
-./version.sh patch    # 1.2.0 → 1.2.1
-./version.sh minor    # 1.2.0 → 1.3.0
-./version.sh major    # 1.2.0 → 2.0.0
-
-# Check current version
-node -pe "require('./package.json').version"
-```
-
-### Development Tools
-```bash
-# View database content
-sqlite3 udora_estimates.db "SELECT * FROM settings LIMIT 5;"
-sqlite3 udora_estimates.db "SELECT * FROM estimates ORDER BY created_at DESC LIMIT 3;"
-
-# Test API endpoints
-curl -X POST http://localhost:8080/api.php -H "Content-Type: application/json" -d '{"action":"get_settings"}'
-
-# Check file permissions
-ls -la udora_estimates.db api.php index.html
-```
-
-## Architecture Overview
-
-### Single-Page Application Structure
-This is a vanilla JavaScript SPA with PHP backend API. No frameworks or build tools required.
-
-**Frontend Flow:**
-- `index.html` → Single page with multiple sections (New Estimate, History, Products, Packages, Settings)
-- JavaScript manages section visibility and state
-- All data fetched via API calls to `api.php`
-- Real-time calculations in frontend, validated on backend
-
-**Backend Flow:**
-- `api.php` → Single file handling all API endpoints with action-based routing
-- Session-based authentication (password: configurable in api.php)
-- SQLite database with WAL mode for performance
-- JSON responses for all API calls
-
-**White-Label System:**
-- Company settings stored in `settings` table
-- Dynamic page title, header, and footer update via `updateDynamicContent()`
-- Branding updates happen real-time when settings saved
-- Fallback to "Udora Safety" defaults
-
-## Key API Endpoints
-
-All endpoints go through `api.php` with `action` parameter:
-
-### Authentication
-```bash
-# Login
-curl -X POST api.php -d "action=login&password=udora12345"
-
-# Logout  
-curl -X POST api.php -d "action=logout"
-```
-
-### Settings Management
-```bash
-# Get all settings
-curl api.php?action=get_settings
-
-# Update settings (white-labeling, markup rates, company info)
-curl -X POST api.php -H "Content-Type: application/json" -d '{"action":"update_settings","company_name":"New Company"}'
-```
-
-### Estimates
-```bash
-# Get estimates list
-curl api.php?action=get_estimates
-
-# Get single estimate with line items
-curl api.php?action=get_estimate&id=123
-
-# Save new estimate
-curl -X POST api.php -H "Content-Type: application/json" -d '{"action":"save_estimate","client_name":"Test Client","line_items":[...]}'
-
-# Export all estimates to CSV
-curl api.php?action=get_detailed_estimates
-```
-
-### Products & Services
-```bash
-# Get products catalog
-curl api.php?action=get_products_services
-
-# Add product
-curl -X POST api.php -H "Content-Type: application/json" -d '{"action":"add_product","name":"Test Product","category":"hardware"}'
-
-# Import products from CSV
-curl -X POST api.php -F "action=import_products" -F "csv_file=@products.csv"
-```
-
-### Packages (v1.2.2+)
-```bash
-# Get packages
-curl api.php?action=get_packages
-
-# Add package
-curl -X POST api.php -H "Content-Type: application/json" -d '{"action":"add_package","name":"Camera Package","category":"camera_systems"}'
-```
-
-## Database Schema Overview
-
-### Core Tables
-- **settings** - Key-value configuration (markup rates, company info, white-label settings)
-- **estimates** - Estimate header (client info, totals, status, notes)
-- **line_items** - Estimate line items (foreign key to estimates)
-- **products_services** - Product catalog (name, category, unit_cost, sku)
-- **product_categories** - Dynamic categories for products
-- **packages** - Service packages (v1.2.2+)
-- **package_categories** - Package categorization (v1.2.2+)
-
-### Key Features
-- SQLite with WAL mode enabled for concurrent access
-- DECIMAL precision for financial calculations  
-- Foreign key constraints with CASCADE delete
-- Automatic timestamps (created_at, updated_at)
-- JSON storage for system_types arrays
-
-### Database Performance
-WAL mode optimizations applied in api.php and setup.php:
-```sql
-PRAGMA journal_mode=WAL;
-PRAGMA synchronous=NORMAL;
-PRAGMA cache_size=10000;
-PRAGMA temp_store=MEMORY;
-PRAGMA mmap_size=268435456; -- 256MB
-```
-
-## Testing & Debugging
-
-### Manual Testing Workflow
-1. Login with default password: `udora12345`
-2. Create test estimate with multiple line items
-3. Test markup calculations (Hardware: 25%, Parts: 30%, Labor: $75/hr)
-4. Verify estimate appears in History
-5. Test CSV export/import functionality
-6. Test white-labeling by changing company name in Settings
-
-### API Testing
-```bash
-# Test estimate creation
-curl -X POST http://localhost:8080/api.php \
-  -H "Content-Type: application/json" \
-  -d '{"action":"save_estimate","client_name":"Test Client","subtotal":1000,"tax_amount":130,"total_amount":1130,"line_items":[{"description":"Test Item","quantity":1,"unit_cost":100,"category":"hardware","markup_percent":25,"line_total":125}]}'
-```
-
-### Debug Mode
-Add to api.php temporarily for debugging:
-```php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-```
-
-## File Structure & Configuration
-
-```
-estimator/
-├── index.html              # Main SPA interface
-├── packages.js             # Package management module (v1.2.2+)
-├── api.php                 # Backend API with all endpoints  
-├── setup.php               # Database initialization
-├── version.sh              # Version bump script
-├── package.json            # Project metadata and version
-├── udora_estimates.db      # SQLite database (created by setup.php)
-├── docs/                   # Documentation
-│   ├── udora_estimator_prd.md
-│   ├── installation_instructions.md
-│   └── CHANGELOG.md
-└── .serena/                # Serena AI configuration
-```
-
-### Configuration Notes
-- **Password:** Change in api.php line ~31: `if ($password === 'udora12345')`
-- **White-labeling:** All done through Settings UI, stored in database
-- **File permissions:** Database file needs write permissions
-- **No build process:** Vanilla JS/PHP, deploy files as-is
-
-## Security Considerations
-
-### Backend Security
-- All database queries use prepared statements (PDO)
-- Session-based authentication with server-side validation
-- Input sanitization on all POST/PUT operations
-- File upload validation for CSV imports (mime type checking)
-
-### Database Security
-- SQLite file should have restricted permissions (600/644)
-- WAL files (.db-wal, .db-shm) created automatically
-- Regular backups recommended for data protection
-
-### Password Security
-- Default password `udora12345` should be changed in production
-- Password stored in plaintext in api.php (consider hashing for production)
-- Session management prevents unauthorized access
-
-## Deployment Notes
+### Local Development
+1. **Server**: MAMP running on `http://localhost/index.html`
+2. **CSS Development**: Run `npm run watch` for live CSS compilation
+3. **File Structure**: All source files in project root, compiled CSS in `dist/`
 
 ### Production Deployment
-1. **Server Requirements:** PHP 7.4+, SQLite3 extension, Apache/Nginx
-2. **File Upload:** Copy all files except `.git/`, `.serena/`, docs can be omitted
-3. **Database Setup:** Run `php setup.php` on new server
-4. **Permissions:** Ensure web server can write to database file and directory
-5. **Password:** Change default password in api.php before deployment
-6. **HTTPS:** Recommend SSL for production (login credentials transmitted)
+1. Run `npm run build` to generate optimized CSS
+2. Ensure `dist/output.css` is accessible via web server
+3. `index.html` links to compiled CSS (no CDN dependency)
 
-### MAMP to Production Migration
-1. Export database: `cp udora_estimates.db production_backup.db`
-2. Upload files to web root
-3. Set proper file permissions: `chmod 644 *.php *.html && chmod 600 *.db`
-4. Test database connectivity and API endpoints
-5. Update any hardcoded localhost URLs if present
+## Custom Styling System
 
-## Common Issues & Solutions
+### Color Palette
+- **Udora Colors**: Custom blue palette for branding
+  - Primary: `#1e3c72` (udora-600)
+  - Secondary: `#2a5298` (udora-500) 
+  - Light: `#f0f4f8` (udora-50)
+- **Brand Colors**: Semantic color tokens
+  - Light background: `#f5f7fa` (brand-light)
 
-### Database Issues
-- **Error: Database locked** → Check WAL mode enabled, verify file permissions
-- **No database file** → Run `php setup.php` to initialize
-- **Export fails** → Check SQLite compatibility, verify WAL checkpoint
+### Component Classes
+- **Navigation**: `.nav-link`, `.mobile-menu`
+- **Forms**: `.form-row`, `.form-group`, `.checkbox-group`
+- **Tables**: `.line-item`, `.totals`, `.status-badge`
+- **UI Components**: `.toast`, `.shadow-card`, `.shadow-modal`
 
-### Authentication Issues  
-- **Can't login** → Verify password in api.php matches input
-- **Session expired** → Check PHP session configuration, restart if needed
+## Application Architecture
 
-### White-Label Issues
-- **Branding not updating** → Check `updateDynamicContent()` function calls
-- **Company name missing** → Verify settings table has `company_name` entry
+### Core Files
+- **index.html**: Main application with login screen and tabbed interface
+- **tailwind-app.js**: Core functionality (navigation, forms, calculations)
+- **packages.js**: Package management features
 
-### Performance Issues
-- **Slow queries** → Run `PRAGMA wal_checkpoint; VACUUM;` on database
-- **Large CSV imports** → Process in smaller batches, increase PHP memory limit
+### Key Features Implementation
+- **State Management**: Vanilla JavaScript with localStorage persistence
+- **Navigation**: Tab-based SPA with section visibility control
+- **Form Handling**: Dynamic form generation and validation
+- **Data Export**: CSV generation and download functionality
+- **Responsive Design**: Mobile-first with collapsible navigation
+
+## Browser Compatibility
+- **Modern Browsers Only**: Requires Safari 16.4+, Chrome 111+, Firefox 128+
+- **CSS Features Used**: @property, color-mix(), cascade layers, container queries
+- **Fallback Strategy**: No fallbacks - modern CSS features are required
+
+## Recent Updates
+
+### Tailwind CSS v4.0 Upgrade (August 2025)
+- ✅ **Automated Migration**: Used `npx @tailwindcss/upgrade` tool
+- ✅ **CSS-first Config**: Migrated from JS config to CSS `@theme` blocks
+- ✅ **Modern CLI**: Using `@tailwindcss/cli` package
+- ✅ **Performance**: Achieved 97% bundle size reduction vs CDN
+- ✅ **Compatibility**: All custom colors and components working
+- ✅ **Production Ready**: No console warnings, optimized build
+
+### Benefits Gained
+1. **Performance**: Much faster page loads (81KB vs 3MB)
+2. **Modern CSS**: Access to latest CSS features and optimizations
+3. **Developer Experience**: Faster builds and better tooling
+4. **Production Ready**: No development dependencies in production
+5. **Future Proof**: Using stable, officially released version
+
+## Maintenance Notes
+
+### CSS Compilation
+- **Source**: `src/input.css` contains all styles and configuration
+- **Output**: `dist/output.css` is the compiled production CSS
+- **Build Process**: Automatically scans HTML files for used classes
+- **Custom Styles**: Component-specific styles are preserved at end of compiled CSS
+
+### Dependencies
+```json
+{
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.12",
+    "tailwindcss": "^4.1.12"
+  }
+}
+```
+
+### File Serving
+- **Local Development**: MAMP serving from project root
+- **CSS Path**: `dist/output.css` must be accessible via web server
+- **JavaScript**: Client-side only, no build process needed
+
+## Future Considerations
+
+### Potential Enhancements
+- **Database Integration**: Replace localStorage with server-side storage
+- **Authentication**: Implement proper user authentication system
+- **API Integration**: Add REST API for data management
+- **Progressive Web App**: Add service worker for offline functionality
+
+### CSS Framework Evolution
+- **Tailwind Updates**: Monitor for v4.x patch updates
+- **Browser Support**: Expand support when older browser usage drops
+- **Performance**: Consider additional optimizations as needed
 
 ---
 
-**Current Version:** v1.2.2 (Package Management)  
-**Technology Stack:** HTML5, CSS3, Vanilla JavaScript, PHP 7.4+, SQLite3  
-**Default Login:** udora12345 (change in production)
+*Last Updated: August 30, 2025*
+*Tailwind CSS Version: v4.1.12*
+*Status: Production Ready ✅*

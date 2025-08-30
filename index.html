@@ -4,166 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title id="pageTitle">Estimate Generator</title>
+    
+    <!-- Compiled Tailwind CSS (Production) -->
+    <link rel="stylesheet" href="dist/output.css">
+    
+    <!-- Custom styles for components that need specific behavior -->
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+      /* Section visibility (mirrors original .section/.active behavior) */
+      .section { display: none; }
+      .section.active { display: block; }
 
-      body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #f5f7fa;
-        color: #333;
-      }
-
-      .login-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-      }
-
-      .login-form {
-        background: white;
-        padding: 2rem;
-        border-radius: 10px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        text-align: center;
-        min-width: 300px;
-      }
-
-      .header {
-        background: #1e3c72;
-        color: white;
-        padding: 1rem 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .header h1 {
-        font-size: 1.5rem;
-      }
-
-      .nav-buttons {
-        display: flex;
-        gap: 1rem;
-      }
-
-      .nav-btn {
-        padding: 0.5rem 1rem;
-        background: transparent;
-        border: 1px solid white;
-        color: white;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: all 0.3s;
-      }
-
-      .nav-btn:hover,
-      .nav-btn.active {
-        background: white;
-        color: #1e3c72;
-      }
-
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-      }
-
-      .section {
-        display: none;
-        background: white;
-        border-radius: 10px;
-        padding: 2rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: 2rem;
-      }
-
-      .form-section {
-        border-bottom: 1px solid #eee;
-        padding-bottom: 2rem;
-        margin-bottom: 2rem;
-      }
-
-      .form-section:last-of-type {
-        border-bottom: none;
-        padding-bottom: 0;
-        margin-bottom: 0;
-      }
-
-      .form-section-header {
-        font-size: 1.3rem;
-        color: #1e3c72;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #1e3c72;
-        display: inline-block;
-      }
-
-      .status-badge {
-        padding: 0.3rem 0.6rem;
-        border-radius: 15px;
-        color: white;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-      }
-
-      .status-draft {
-        background: #6c757d;
-      }
-      .status-sent {
-        background: #007bff;
-      }
-      .status-approved {
-        background: #28a745;
-      }
-
-      /* Toast Notifications */
-      .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-      }
+      /* Toast base + animations */
       .toast {
-        background-color: #333;
-        color: #fff;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 10px;
         opacity: 0;
-        transition: opacity 0.5s, transform 0.5s;
         transform: translateX(100%);
+        transition: opacity 0.5s, transform 0.5s;
+        padding: 15px;
+        border-radius: 8px;
+        color: #fff;
+        min-width: 240px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
       }
-      .toast.show {
-        opacity: 1;
-        transform: translateX(0);
-      }
-      .toast.success {
-        background-color: #28a745;
-      }
-      .toast.error {
-        background-color: #dc3545;
-      }
+      .toast.show { opacity: 1; transform: translateX(0); }
+      .toast.success { background-color: #28a745; }
+      .toast.error { background-color: #dc3545; }
 
-      /* Sortable Table Headers */
-      th.sortable {
-        cursor: pointer;
-        position: relative;
-      }
-      th.sortable:hover {
-        background-color: #e9ecef;
-      }
+      /* Sortable table headers */
+      th.sortable { cursor: pointer; position: relative; }
       th.sortable::after {
         content: '';
         position: absolute;
@@ -172,533 +39,309 @@
         margin-top: -8px;
         border: 4px solid transparent;
       }
-      th.sort-asc::after {
-        border-bottom-color: #333;
-      }
-      th.sort-desc::after {
-        border-top-color: #333;
-      }
-
-      /* Expandable Description */
-      .description-cell .short-desc {
-        display: inline;
-      }
-      .description-cell .full-desc {
-        display: none;
-      }
-      .description-cell.expanded .short-desc {
-        display: none;
-      }
-      .description-cell.expanded .full-desc {
-        display: inline;
-      }
-      .toggle-desc-btn {
-        background: none;
-        border: none;
-        color: #007bff;
-        cursor: pointer;
-        padding: 0;
-        margin-left: 5px;
-        font-size: 0.8rem;
-      }
-
-      .section.active {
-        display: block;
-      }
-
-      .form-group {
-        margin-bottom: 1rem;
-      }
-
+      th.sort-asc::after { border-bottom-color: #333; }
+      th.sort-desc::after { border-top-color: #333; }
+      
+      /* Expandable description cells */
+      .description-cell .short-desc { display: inline; }
+      .description-cell .full-desc { display: none; }
+      .description-cell.expanded .short-desc { display: none; }
+      .description-cell.expanded .full-desc { display: inline; }
+      
+      /* Form and input styles */
       .form-row {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 1rem;
-        margin-bottom: 1rem;
       }
-
-      label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 600;
-      }
-
-      input,
-      select,
-      textarea {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 1rem;
-      }
-
-      .btn {
-        padding: 0.75rem 1.5rem;
-        background: #1e3c72;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: background 0.3s;
-      }
-
-      .btn:hover {
-        background: #2a5298;
-      }
-
-      .btn-secondary {
-        background: #6c757d;
-      }
-
-      .btn-danger {
-        background: #dc3545;
-      }
-
-      .line-items {
-        margin: 2rem 0;
-      }
-
+      .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+      .checkbox-group { display: flex; gap: 1rem; align-items: center; justify-content: flex-end; }
+      .checkbox-item { display: flex; align-items: center; gap: 0.5rem; }
+      
+      /* Line items styling */
+      .line-items { margin: 2rem 0; }
       .line-item {
         display: grid;
-        grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr auto;
+        grid-template-columns: 2fr 0.5fr 1fr 1fr 0.75fr 1fr 0.5fr;
         gap: 0.5rem;
         align-items: center;
-        padding: 0.5rem;
-        border: 1px solid #eee;
-        margin-bottom: 0.5rem;
-        border-radius: 5px;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
       }
-
       .line-item-header {
-        font-weight: bold;
         background: #f8f9fa;
-      }
-
-      .totals {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 5px;
-        margin-top: 1rem;
-      }
-
-      .totals-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-      }
-
-      .total-final {
-        font-weight: bold;
-        font-size: 1.2rem;
-        border-top: 2px solid #1e3c72;
-        padding-top: 0.5rem;
-      }
-
-      .estimate-preview {
-        background: white;
-        padding: 2rem;
-        border: 1px solid #ddd;
-        margin: 1rem 0;
-      }
-
-      .company-header {
-        text-align: center;
-        border-bottom: 2px solid #1e3c72;
-        padding-bottom: 1rem;
-        margin-bottom: 2rem;
-      }
-
-      .estimate-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-        margin-bottom: 2rem;
-      }
-
-      .checkbox-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-      }
-
-      .checkbox-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .checkbox-group.right-aligned {
-        justify-content: flex-end;
-      }
-
-      /* Pagination styles */
-      .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-        margin: 2rem 0;
-        flex-wrap: wrap;
-      }
-
-      .pagination button {
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #ddd;
-        background: white;
-        cursor: pointer;
-        border-radius: 3px;
-        font-size: 0.9rem;
-        transition: all 0.3s;
-      }
-
-      .pagination button:hover:not(:disabled) {
-        background: #f8f9fa;
-        border-color: #1e3c72;
-      }
-
-      .pagination button.active {
-        background: #1e3c72;
-        color: white;
-        border-color: #1e3c72;
-      }
-
-      .pagination button:disabled {
-        background: #f8f9fa;
-        color: #6c757d;
-        cursor: not-allowed;
-      }
-
-      .pagination .page-info {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-        color: #666;
-      }
-
-      /* Footer styles */
-      .footer {
-        background: #1e3c72;
-        color: white;
-        margin-top: 3rem;
-      }
-
-      .footer .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 1rem;
-      }
-
-      .footer .row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-      }
-
-      .footer-text {
-        font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .footer-version {
-        font-size: 0.85rem;
+        padding: 0.75rem 0.5rem;
         font-weight: 600;
-        color: rgba(255, 255, 255, 0.9);
-        background: rgba(255, 255, 255, 0.1);
-        padding: 0.3rem 0.6rem;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+      }
+      
+      .totals { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; font-size: 1.1rem; }
+      .totals-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+      .total-final {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e3c72;
+        border-top: 2px solid #1e3c72;
+        padding-top: 0.75rem;
+        margin-top: 0.75rem;
       }
 
-      /* Tablet styles */
-      @media (max-width: 1024px) {
-        .container {
-          padding: 1rem;
-        }
-
-        .header {
-          padding: 1rem;
-        }
-
-        .header h1 {
-          font-size: 1.3rem;
-        }
-
-        .nav-buttons {
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-
-        .nav-btn {
-          padding: 0.4rem 0.8rem;
-          font-size: 0.9rem;
-        }
+      /* Status badges and active nav state */
+      .status-badge { padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #fff; }
+      .status-draft { background-color: #6c757d; }
+      .status-sent { background-color: #007bff; }
+      .status-approved { background-color: #28a745; }
+      
+      /* Headless UI Navigation active state */
+      .nav-link.active { 
+        border-bottom-color: #1e3c72 !important;
+        color: #1e3c72 !important;
       }
-
-      /* Mobile styles */
-      @media (max-width: 768px) {
-        .header {
-          flex-direction: column;
-          gap: 1rem;
-          text-align: center;
-        }
-
-        .header h1 {
-          font-size: 1.2rem;
-        }
-
-        .nav-buttons {
-          justify-content: center;
-          width: 100%;
-        }
-
-        .nav-btn {
-          flex: 1;
-          min-width: 70px;
-          padding: 0.5rem 0.3rem;
-          font-size: 0.8rem;
-        }
-
-        .container {
-          padding: 0.5rem;
-        }
-
-        .section {
-          padding: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .form-row {
-          grid-template-columns: 1fr;
-          gap: 0.5rem;
-        }
-
-        .line-items {
-          margin: 1rem 0;
-        }
-
-        .line-item {
-          grid-template-columns: 1fr;
-          gap: 0.5rem;
-          padding: 1rem;
-          background: #f8f9fa;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-        }
-
-        .line-item-header {
-          display: none; /* Hide header on mobile, use labels instead */
-        }
-
-        .line-item:not(.line-item-header) {
-          display: block;
-        }
-
-        .line-item:not(.line-item-header) > * {
-          margin-bottom: 0.5rem;
-          width: 100%;
-        }
-
-        .line-item:not(.line-item-header) input,
-        .line-item:not(.line-item-header) select {
-          padding: 0.75rem;
-          font-size: 1rem;
-          border-radius: 5px;
-        }
-
-        .line-item .btn {
-          margin-top: 0.5rem;
-          width: 100%;
-        }
-
-        .totals {
-          padding: 1rem;
-          font-size: 1.1rem;
-        }
-
-        .totals-row {
-          margin-bottom: 0.75rem;
-        }
-
-        .total-final {
-          font-size: 1.3rem;
-          padding-top: 0.75rem;
-        }
-
-        .estimate-info {
-          grid-template-columns: 1fr;
-          gap: 1rem;
-        }
-
-        .checkbox-group {
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .checkbox-item {
-          padding: 0.5rem;
-          background: #f8f9fa;
-          border-radius: 5px;
-        }
-
-        /* Mobile-specific button styling */
-        .btn {
-          padding: 0.75rem 1rem;
-          font-size: 1rem;
-          margin-bottom: 0.5rem;
-          width: 100%;
-        }
-
-        /* Modal adjustments for mobile */
-        #previewModal > div {
-          margin: 1% auto;
-          width: 98%;
-        }
-
-        #previewContent {
-          padding: 1rem;
-          max-height: 80vh;
-        }
+      
+      /* Mobile menu styles */
+      .mobile-menu { 
+        display: none; 
       }
-
-      /* Small mobile styles */
-      @media (max-width: 480px) {
-        .header h1 {
-          font-size: 1rem;
-        }
-
-        .nav-btn {
-          font-size: 0.7rem;
-          padding: 0.4rem 0.2rem;
-        }
-
-        .section {
-          padding: 0.5rem;
-        }
-
-        input,
-        select,
-        textarea {
-          font-size: 16px; /* Prevent zoom on iOS */
-        }
-
-        .totals {
-          font-size: 1rem;
-        }
-
-        .total-final {
-          font-size: 1.2rem;
-        }
+      .mobile-menu.show { 
+        display: block; 
       }
     </style>
   </head>
-  <body>
+  <body class="bg-brand-light text-gray-700 font-sans">
     <!-- Login Screen -->
-    <div id="loginScreen" class="login-screen">
-      <div class="login-form">
-        <h2>Estimator</h2>
-        <p style="margin: 1rem 0">
+    <div id="loginScreen" class="fixed inset-0 bg-linear-to-br from-udora-600 to-udora-500 flex items-center justify-center z-50">
+      <div class="bg-white p-8 rounded-card shadow-modal text-center min-w-[300px]">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Estimator</h2>
+        <p class="text-gray-600 my-4">
           Please enter your password to access the system
         </p>
         <input
           type="password"
           id="passwordInput"
           placeholder="Password"
-          style="margin-bottom: 1rem"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent mb-4 text-base"
         />
-        <button onclick="login()" class="btn">Login</button>
+        <button 
+          onclick="login()" 
+          class="w-full bg-udora-600 hover:bg-udora-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+        >
+          Login
+        </button>
         <div
           id="loginError"
-          style="color: red; margin-top: 1rem; display: none"
+          class="text-red-600 mt-4 hidden"
         ></div>
       </div>
     </div>
 
     <!-- Main Application -->
-    <div id="mainApp" style="display: none">
-      <div class="header">
-        <h1 id="headerTitle">Udora Safety - Estimate Generator</h1>
-        <div class="nav-buttons">
-          <button class="nav-btn active" onclick="showSection('estimate')">
-            New Estimate
-          </button>
-          <button class="nav-btn" onclick="showSection('history')">
-            History
-          </button>
-          <button class="nav-btn" onclick="showSection('products')">
-            Products & Services
-          </button>
-          <button class="nav-btn" onclick="showSection('packages')">
-            Packages
-          </button>
-          <button class="nav-btn" onclick="showSection('settings')">
-            Settings
-          </button>
-          <button class="nav-btn" onclick="logout()">Logout</button>
-        </div>
-      </div>
-
-      <div class="container">
-        <!-- Estimate Section -->
-        <div id="estimateSection" class="section active">
-          <h2>Create New Estimate</h2>
-
-          <div class="form-section">
-            <h3 class="form-section-header">Client Information</h3>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Client Name *</label>
-                <input type="text" id="clientName" required />
-              </div>
-              <div class="form-group">
-                <label>Client Email</label>
-                <input type="email" id="clientEmail" />
-              </div>
-              <div class="form-group">
-                <label>Client Phone</label>
-                <input type="tel" id="clientPhone" />
+    <div id="mainApp" class="hidden">
+      <!-- Headless UI Navigation Header -->
+      <header class="bg-white shadow">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="flex h-20 justify-between items-center">
+            <!-- Logo/Title -->
+            <div class="flex shrink-0 items-center">
+              <h1 id="headerTitle" class="text-xl sm:text-2xl font-bold text-udora-600">
+                Udora Safety - Estimate Generator
+              </h1>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <nav class="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <a href="#" 
+                 class="nav-link inline-flex items-center border-b-2 border-udora-500 px-1 pt-1 text-base font-medium text-udora-600 active" 
+                 onclick="showSection('estimate')" 
+                 aria-current="page">
+                New Estimate
+              </a>
+              <a href="#" 
+                 class="nav-link inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-base font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors duration-200" 
+                 onclick="showSection('history')">
+                History
+              </a>
+              <a href="#" 
+                 class="nav-link inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-base font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors duration-200" 
+                 onclick="showSection('products')">
+                Products & Services
+              </a>
+              <a href="#" 
+                 class="nav-link inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-base font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors duration-200" 
+                 onclick="showSection('packages')">
+                Packages
+              </a>
+              <a href="#" 
+                 class="nav-link inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-base font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors duration-200" 
+                 onclick="showSection('settings')">
+                Settings
+              </a>
+            </nav>
+            
+            <!-- Desktop Logout -->
+            <div class="hidden sm:ml-6 sm:flex sm:items-center">
+              <div class="relative ml-3">
+                <button 
+                  type="button" 
+                  class="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-udora-500 focus:ring-offset-2" 
+                  onclick="logout()">
+                  <span class="text-gray-500 hover:text-red-600 px-3 py-2 text-sm font-medium transition-colors duration-200">Logout</span>
+                </button>
               </div>
             </div>
-            <div class="form-group">
-              <label>Project Address</label>
-              <textarea id="projectAddress" rows="3"></textarea>
+            
+            <!-- Mobile menu button -->
+            <div class="-mr-2 flex items-center sm:hidden">
+              <button 
+                type="button" 
+                class="inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-udora-500 focus:ring-offset-2" 
+                onclick="toggleMobileMenu()" 
+                id="mobile-menu-button"
+                aria-controls="mobile-menu" 
+                aria-expanded="false">
+                <span class="sr-only">Open main menu</span>
+                <!-- Menu icon -->
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile menu -->
+        <div class="mobile-menu sm:hidden" id="mobile-menu">
+          <div class="space-y-1 border-t border-gray-200 pb-3 pt-2">
+            <a href="#" 
+               class="mobile-nav-link block border-l-4 border-udora-500 bg-udora-50 py-2 pl-3 pr-4 text-base font-medium text-udora-700 active" 
+               onclick="showSection('estimate'); closeMobileMenu()" 
+               aria-current="page">
+              New Estimate
+            </a>
+            <a href="#" 
+               class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800" 
+               onclick="showSection('history'); closeMobileMenu()">
+              History
+            </a>
+            <a href="#" 
+               class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800" 
+               onclick="showSection('products'); closeMobileMenu()">
+              Products & Services
+            </a>
+            <a href="#" 
+               class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800" 
+               onclick="showSection('packages'); closeMobileMenu()">
+              Packages
+            </a>
+            <a href="#" 
+               class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800" 
+               onclick="showSection('settings'); closeMobileMenu()">
+              Settings
+            </a>
+            <a href="#" 
+               class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-800" 
+               onclick="logout(); closeMobileMenu()">
+              Logout
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Container -->
+      <div class="max-w-7xl mx-auto px-4 py-8 lg:px-8">
+        
+        <!-- Estimate Section -->
+        <div id="estimateSection" class="section bg-white rounded-card shadow-card p-8 mb-8 active">
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">Create New Estimate</h2>
+
+          <!-- Client Information -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Client Information
+            </h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Client Name *</label>
+                <input 
+                  type="text" 
+                  id="clientName" 
+                  required 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                />
+              </div>
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Client Email</label>
+                <input 
+                  type="email" 
+                  id="clientEmail" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                />
+              </div>
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Client Phone</label>
+                <input 
+                  type="tel" 
+                  id="clientPhone" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div class="form-group mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Project Address</label>
+              <textarea 
+                id="projectAddress" 
+                rows="3" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+              ></textarea>
             </div>
           </div>
 
-          <div class="form-section">
-            <h3 class="form-section-header">Project Details</h3>
+          <!-- Project Details -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Project Details
+            </h3>
             <div class="form-row">
               <div class="form-group">
-                <label>Project Type</label>
-                <select id="projectType">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                <select 
+                  id="projectType" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                >
                   <option value="residential">Residential</option>
                   <option value="commercial">Commercial</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Estimate Status</label>
-                <select id="estimateStatus">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Estimate Status</label>
+                <select 
+                  id="estimateStatus" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
+                >
                   <option value="draft">Draft</option>
                   <option value="sent">Sent</option>
                   <option value="approved">Approved</option>
                 </select>
               </div>
             </div>
-            <div class="form-group">
-              <label>Internal Notes</label>
+            <div class="form-group mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Internal Notes</label>
               <textarea
                 id="estimateNotes"
                 rows="3"
                 placeholder="Add any internal notes for this estimate..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
               ></textarea>
             </div>
           </div>
 
-          <div class="form-section">
-            <h3 class="form-section-header">Line Items</h3>
+          <!-- Line Items -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Line Items
+            </h3>
             <div class="line-items">
-              <div class="line-item line-item-header">
+              <div class="line-item line-item-header hidden lg:grid">
                 <div>Description</div>
                 <div>Qty</div>
                 <div>Unit Cost</div>
@@ -708,51 +351,51 @@
                 <div>Action</div>
               </div>
               <div id="lineItemsList"></div>
-              <button type="button" onclick="addLineItem()" class="btn">
+              <button 
+                type="button" 
+                onclick="addLineItem()" 
+                class="mt-4 bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+              >
                 Add Line Item
               </button>
             </div>
           </div>
 
-          <div class="form-section">
-            <h3 class="form-section-header">Totals</h3>
-            <div class="form-group">
-              <div class="checkbox-group right-aligned">
+          <!-- Totals -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Totals
+            </h3>
+            <div class="form-group mb-4">
+              <div class="checkbox-group">
                 <div class="checkbox-item">
                   <input
                     type="checkbox"
                     id="applySalesCommission"
                     onchange="calculateTotals()"
+                    class="h-4 w-4 text-udora-600 focus:ring-udora-500 border-gray-300 rounded"
                   />
-                  <label for="applySalesCommission"
-                    >Apply Sales Rep Commission (<span
-                      id="salesCommissionDisplay"
-                      >0</span
-                    >%)</label
-                  >
+                  <label for="applySalesCommission" class="text-sm text-gray-700">
+                    Apply Sales Rep Commission (<span id="salesCommissionDisplay">0</span>%)
+                  </label>
                 </div>
               </div>
             </div>
             <div class="totals">
               <div class="totals-row">
                 <span>Subtotal:</span>
-                <span id="subtotalAmount">$0.00</span>
+                <span id="subtotalAmount" class="font-semibold">$0.00</span>
               </div>
               <div
-                class="totals-row"
+                class="totals-row hidden"
                 id="salesCommissionRow"
-                style="display: none"
               >
-                <span
-                  >Sales Commission (<span id="salesCommissionRateDisplay"
-                    >0</span
-                  >%):</span
-                >
-                <span id="salesCommissionAmount">$0.00</span>
+                <span>Sales Commission (<span id="salesCommissionRateDisplay">5</span>%):</span>
+                <span id="salesCommissionAmount" class="font-semibold">$0.00</span>
               </div>
               <div class="totals-row">
                 <span>Tax (<span id="taxRateDisplay">13</span>%):</span>
-                <span id="taxAmount">$0.00</span>
+                <span id="taxAmount" class="font-semibold">$0.00</span>
               </div>
               <div class="totals-row total-final">
                 <span>Total:</span>
@@ -761,76 +404,74 @@
             </div>
           </div>
 
-          <div style="margin-top: 2rem">
-            <button onclick="saveEstimate()" class="btn">Save Estimate</button>
-            <button onclick="previewEstimate()" class="btn btn-secondary">
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-end">
+            <button 
+              onclick="saveEstimate()" 
+              class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              Save Estimate
+            </button>
+            <button 
+              onclick="previewEstimate()" 
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+            >
               Preview
             </button>
           </div>
         </div>
-
+        
         <!-- History Section -->
-        <div id="historySection" class="section">
-          <h2>Estimate History</h2>
+        <div id="historySection" class="section bg-white rounded-card shadow-card p-8 mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">Estimate History</h2>
           
-          <div class="form-section">
-            <h3 class="form-section-header">Manage Estimates</h3>
-            <div
-              style="
-                margin-bottom: 1rem;
-                display: flex;
-                gap: 1rem;
-                flex-wrap: wrap;
-              "
-            >
-              <button onclick="exportEstimatesCSV()" class="btn btn-secondary">
+          <div class="border-b border-gray-200 pb-6 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Manage Estimates
+            </h3>
+            <div class="flex flex-wrap gap-4 mb-4">
+              <button onclick="exportEstimatesCSV()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Export Estimates to CSV
               </button>
-              <button onclick="showEstimateImportForm()" class="btn btn-secondary">
+              <button onclick="showEstimateImportForm()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Import Estimates from CSV
               </button>
             </div>
           </div>
 
           <!-- Import Form for Estimates -->
-          <div id="estimateImportFormContainer" style="display: none">
-            <div class="form-section">
-              <h3 class="form-section-header">Import Estimates from CSV</h3>
-              <div id="estimateImportForm"></div>
-            </div>
+          <div id="estimateImportFormContainer" class="hidden border border-gray-200 rounded-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Import Estimates from CSV
+            </h3>
+            <div id="estimateImportForm"></div>
           </div>
           
           <div id="estimateHistory"></div>
         </div>
 
         <!-- Products & Services Section -->
-        <div id="productsSection" class="section">
-          <h2>Products & Services</h2>
+        <div id="productsSection" class="section bg-white rounded-card shadow-card p-8 mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">Products & Services</h2>
 
-          <div class="form-section">
-            <h3 class="form-section-header">Manage Products</h3>
-            <div
-              style="
-                margin-bottom: 1rem;
-                display: flex;
-                gap: 1rem;
-                flex-wrap: wrap;
-              "
-            >
-              <button onclick="showAddProductForm()" class="btn">
+          <div class="border-b border-gray-200 pb-6 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Manage Products
+            </h3>
+            <div class="flex flex-wrap gap-4 mb-4">
+              <button onclick="showAddProductForm()" class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Add New Product/Service
               </button>
-              <button onclick="exportProductsCSV()" class="btn btn-secondary">
+              <button onclick="exportProductsCSV()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Export to CSV
               </button>
-              <button onclick="showImportForm()" class="btn btn-secondary">
+              <button onclick="showImportForm()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Import from CSV
               </button>
               <button
                 id="bulkDeleteBtn"
                 onclick="deleteSelectedProducts()"
-                class="btn btn-danger"
-                style="display: none"
+                class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 hidden"
               >
                 Delete Selected
               </button>
@@ -838,60 +479,52 @@
           </div>
 
           <!-- Add/Edit Product Form -->
-          <div id="addProductFormContainer" style="display: none">
-            <div class="form-section">
-              <h3 id="addProductFormTitle" class="form-section-header">
-                Add New Product/Service
-              </h3>
-              <div id="addProductForm"></div>
-            </div>
+          <div id="addProductFormContainer" class="hidden border border-gray-200 rounded-lg p-6 mb-8">
+            <h3 id="addProductFormTitle" class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Add New Product/Service
+            </h3>
+            <div id="addProductForm"></div>
           </div>
 
           <!-- Import Form -->
-          <div id="importFormContainer" style="display: none">
-            <div class="form-section">
-              <h3 class="form-section-header">Import Products from CSV</h3>
-              <div id="importForm"></div>
-            </div>
+          <div id="importFormContainer" class="hidden border border-gray-200 rounded-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Import Products from CSV
+            </h3>
+            <div id="importForm"></div>
           </div>
 
-          <div class="form-section">
-            <h3 class="form-section-header">Product Catalog</h3>
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Product Catalog
+            </h3>
             <!-- Search and Filter Controls -->
-            <div
-              style="
-                background: #f8f9fa;
-                padding: 1.5rem;
-                border-radius: 5px;
-                margin-bottom: 2rem;
-              "
-            >
+            <div class="bg-gray-50 p-6 rounded-lg mb-8">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Search Products</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Search Products</label>
                   <input
                     type="text"
                     id="productSearchInput"
                     placeholder="Search by name, SKU, or description..."
                     oninput="filterProducts()"
-                    style="width: 100%"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                   />
                 </div>
                 <div class="form-group">
-                  <label>Filter by Category</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
                   <select
                     id="categoryFilter"
                     onchange="filterProducts()"
-                    style="width: 100%"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                   >
                     <option value="all">All Categories</option>
                   </select>
                 </div>
-                <div class="form-group" style="display: flex; align-items: end">
+                <div class="form-group flex items-end">
                   <button
                     onclick="clearFilters()"
-                    class="btn btn-secondary"
-                    style="margin-top: 1.5rem"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 mt-6"
                   >
                     Clear Filters
                   </button>
@@ -899,7 +532,7 @@
               </div>
               <div
                 id="filterStatus"
-                style="margin-top: 1rem; font-size: 0.9rem; color: #666"
+                class="mt-4 text-sm text-gray-600"
               ></div>
             </div>
             <div id="productsList"></div>
@@ -907,86 +540,73 @@
         </div>
 
         <!-- Packages Section -->
-        <div id="packagesSection" class="section">
-          <h2>Packages</h2>
+        <div id="packagesSection" class="section bg-white rounded-card shadow-card p-8 mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">Packages</h2>
 
-          <div class="form-section">
-            <h3 class="form-section-header">Manage Packages</h3>
-            <div
-              style="
-                margin-bottom: 1rem;
-                display: flex;
-                gap: 1rem;
-                flex-wrap: wrap;
-              "
-            >
-              <button onclick="showAddPackageForm()" class="btn">
+          <div class="border-b border-gray-200 pb-6 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Manage Packages
+            </h3>
+            <div class="flex flex-wrap gap-4 mb-4">
+              <button onclick="showAddPackageForm()" class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Add New Package
               </button>
-              <button onclick="exportPackagesCSV()" class="btn btn-secondary">
+              <button onclick="exportPackagesCSV()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Export to CSV
               </button>
-              <button onclick="showPackageImportForm()" class="btn btn-secondary">
+              <button onclick="showPackageImportForm()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                 Import from CSV
               </button>
             </div>
           </div>
 
           <!-- Add/Edit Package Form -->
-          <div id="addPackageFormContainer" style="display: none">
-            <div class="form-section">
-              <h3 id="addPackageFormTitle" class="form-section-header">
-                Add New Package
-              </h3>
-              <div id="addPackageForm"></div>
-            </div>
+          <div id="addPackageFormContainer" class="hidden border border-gray-200 rounded-lg p-6 mb-8">
+            <h3 id="addPackageFormTitle" class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Add New Package
+            </h3>
+            <div id="addPackageForm"></div>
           </div>
 
           <!-- Import Form for Packages -->
-          <div id="packageImportFormContainer" style="display: none">
-            <div class="form-section">
-              <h3 class="form-section-header">Import Packages from CSV</h3>
-              <div id="packageImportForm"></div>
-            </div>
+          <div id="packageImportFormContainer" class="hidden border border-gray-200 rounded-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Import Packages from CSV
+            </h3>
+            <div id="packageImportForm"></div>
           </div>
 
-          <div class="form-section">
-            <h3 class="form-section-header">Package Catalog</h3>
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              Package Catalog
+            </h3>
             <!-- Search and Filter Controls -->
-            <div
-              style="
-                background: #f8f9fa;
-                padding: 1.5rem;
-                border-radius: 5px;
-                margin-bottom: 2rem;
-              "
-            >
+            <div class="bg-gray-50 p-6 rounded-lg mb-8">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Search Packages</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Search Packages</label>
                   <input
                     type="text"
                     id="packageSearchInput"
                     placeholder="Search by name, category, or description..."
                     oninput="filterPackages()"
-                    style="width: 100%"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                   />
                 </div>
                 <div class="form-group">
-                  <label>Filter by Category</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
                   <select
                     id="packageCategoryFilter"
                     onchange="filterPackages()"
-                    style="width: 100%"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                   >
                     <option value="all">All Categories</option>
                   </select>
                 </div>
-                <div class="form-group" style="display: flex; align-items: end">
+                <div class="form-group flex items-end">
                   <button
                     onclick="clearPackageFilters()"
-                    class="btn btn-secondary"
-                    style="margin-top: 1.5rem"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 mt-6"
                   >
                     Clear Filters
                   </button>
@@ -994,7 +614,7 @@
               </div>
               <div
                 id="packageFilterStatus"
-                style="margin-top: 1rem; font-size: 0.9rem; color: #666"
+                class="mt-4 text-sm text-gray-600"
               ></div>
             </div>
             <div id="packagesList"></div>
@@ -1002,191 +622,199 @@
         </div>
 
         <!-- Settings Section -->
-        <div id="settingsSection" class="section">
-          <h2>Settings</h2>
+        <div id="settingsSection" class="section bg-white rounded-card shadow-card p-8 mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">Settings</h2>
 
           <!-- Pricing & Markup Settings -->
-          <div class="form-section">
-            <h3 class="form-section-header">Pricing & Markup Settings</h3>
-            <p style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem">
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Pricing & Markup Settings
+            </h3>
+            <p class="text-gray-600 mb-6 text-sm">
               Configure default markup percentages and rates for different
               product categories.
             </p>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Hardware Markup (%)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Hardware Markup (%)</label>
                 <input
                   type="number"
                   id="hardwareMarkup"
                   step="0.01"
                   placeholder="25.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
               <div class="form-group">
-                <label>Parts & Materials Markup (%)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Parts & Materials Markup (%)</label>
                 <input
                   type="number"
                   id="partsMaterialsMarkup"
                   step="0.01"
                   placeholder="30.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
               <div class="form-group">
-                <label>Labor Rate ($/hour)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Labor Rate ($/hour)</label>
                 <input
                   type="number"
                   id="laborRate"
                   step="0.01"
                   placeholder="75.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
               <div class="form-group">
-                <label>Labor Markup (%)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Labor Markup (%)</label>
                 <input
                   type="number"
                   id="laborMarkup"
                   step="0.01"
                   placeholder="0.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Sales Rep Commission (%)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sales Rep Commission (%)</label>
                 <input
                   type="number"
                   id="salesRepCommission"
                   step="0.01"
                   placeholder="8.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
               <div class="form-group">
-                <label>Tax Rate (%)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tax Rate (%)</label>
                 <input
                   type="number"
                   id="taxRate"
                   step="0.01"
                   placeholder="13.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
             </div>
           </div>
 
           <!-- Company Information -->
-          <div class="form-section">
-            <h3 class="form-section-header">Company Information</h3>
-            <p style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem">
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Company Information
+            </h3>
+            <p class="text-gray-600 mb-6 text-sm">
               Update your company details that appear on estimates and invoices.
             </p>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Company Name</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
                 <input
                   type="text"
                   id="companyName"
                   placeholder="Your Company Name"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
               <div class="form-group">
-                <label>Company Phone</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
                 <input
                   type="text"
                   id="companyPhone"
                   placeholder="(555) 123-4567"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
               <div class="form-group">
-                <label>Company Email</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Company Email</label>
                 <input
                   type="email"
                   id="companyEmail"
                   placeholder="info@yourcompany.com"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Warranty Terms</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Warranty Terms</label>
                 <textarea
                   id="warrantyTerms"
                   rows="3"
                   placeholder="Enter your standard warranty terms..."
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 ></textarea>
               </div>
               <div class="form-group">
-                <label>Payment Terms</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
                 <textarea
                   id="paymentTerms"
                   rows="3"
                   placeholder="Enter your payment terms (e.g., Net 30 days)..."
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                 ></textarea>
               </div>
             </div>
 
-            <div style="margin-top: 1.5rem">
-              <button onclick="saveSettings()" class="btn">
+            <div class="mt-6">
+              <button onclick="saveSettings()" class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
                 Save Settings
               </button>
             </div>
           </div>
 
           <!-- Product Categories Management -->
-          <div class="form-section">
-            <h3 class="form-section-header">Product Categories</h3>
-            <p style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem">
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Product Categories
+            </h3>
+            <p class="text-gray-600 mb-6 text-sm">
               Manage product categories used throughout the system for
               organizing your inventory.
             </p>
 
             <div id="categoryManagementContainer">
-              <div id="categoryList" style="margin-bottom: 1.5rem"></div>
+              <div id="categoryList" class="mb-6"></div>
 
-              <div
-                style="
-                  background: #f8f9fa;
-                  padding: 1.5rem;
-                  border-radius: 8px;
-                  border: 1px solid #e9ecef;
-                "
-              >
-                <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #495057">
+              <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h4 class="text-base font-medium text-gray-700 mb-4">
                   Add New Category
                 </h4>
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Category ID</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category ID</label>
                     <input
                       type="text"
                       id="newCategoryName"
                       placeholder="e.g., cctv_cameras"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                     />
-                    <small style="color: #6c757d; font-size: 0.8rem"
+                    <small class="text-gray-500 text-xs"
                       >Use lowercase letters and underscores only</small
                     >
                   </div>
                   <div class="form-group">
-                    <label>Display Name</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
                     <input
                       type="text"
                       id="newCategoryLabel"
                       placeholder="e.g., CCTV Cameras"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent"
                     />
-                    <small style="color: #6c757d; font-size: 0.8rem"
+                    <small class="text-gray-500 text-xs"
                       >Friendly name shown to users</small
                     >
                   </div>
-                  <div
-                    class="form-group"
-                    style="display: flex; align-items: end"
-                  >
+                  <div class="form-group flex items-end">
                     <button
                       onclick="addCategory()"
-                      class="btn"
-                      style="margin-top: 1.5rem"
+                      class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 mt-6"
                     >
                       Add Category
                     </button>
@@ -1197,2481 +825,39 @@
           </div>
 
           <!-- Package Categories Management -->
-          <div class="form-section">
-            <h3 class="form-section-header">Package Categories</h3>
-            <p style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem">
-              Manage package categories used for organizing your package catalog.
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-4 pb-2 border-b-2 border-udora-600 inline-block">
+              Package Categories
+            </h3>
+            <p class="text-gray-600 mb-6 text-sm">
+              Manage package categories used for organizing service packages.
             </p>
-
+            <!-- Add similar structure for package categories -->
             <div id="packageCategoryManagementContainer">
-              <div id="packageCategoryList" style="margin-bottom: 1.5rem"></div>
-
-              <div
-                style="
-                  background: #f8f9fa;
-                  padding: 1.5rem;
-                  border-radius: 8px;
-                  border: 1px solid #e9ecef;
-                "
-              >
-                <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #495057">
-                  Add New Package Category
-                </h4>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Category ID</label>
-                    <input
-                      type="text"
-                      id="newPackageCategoryName"
-                      placeholder="e.g., camera_systems"
-                    />
-                    <small style="color: #6c757d; font-size: 0.8rem"
-                      >Use lowercase letters and underscores only</small
-                    >
-                  </div>
-                  <div class="form-group">
-                    <label>Display Name</label>
-                    <input
-                      type="text"
-                      id="newPackageCategoryLabel"
-                      placeholder="e.g., Camera Systems"
-                    />
-                    <small style="color: #6c757d; font-size: 0.8rem"
-                      >Friendly name shown to users</small
-                    >
-                  </div>
-                  <div
-                    class="form-group"
-                    style="display: flex; align-items: end"
-                  >
-                    <button
-                      onclick="addPackageCategory()"
-                      class="btn"
-                      style="margin-top: 1.5rem"
-                    >
-                      Add Package Category
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <!-- Package categories content will be added here -->
             </div>
           </div>
         </div>
+        
       </div>
     </div>
 
-    <!-- Estimate Preview Modal -->
-    <div
-      id="previewModal"
-      style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 2000;
-      "
-    >
-      <div
-        style="
-          background: white;
-          margin: 2% auto;
-          width: 90%;
-          max-width: 800px;
-          border-radius: 10px;
-          overflow: hidden;
-        "
-      >
-        <div
-          style="
-            padding: 1rem;
-            background: #1e3c72;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          "
-        >
-          <h3>Estimate Preview</h3>
-          <button
-            onclick="closePreview()"
-            style="
-              background: none;
-              border: none;
-              color: white;
-              font-size: 1.5rem;
-              cursor: pointer;
-            "
-          >
-            &times;
-          </button>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="hidden fixed inset-0 bg-black/80 z-2000">
+      <div class="bg-white mx-auto my-[2%] w-[90%] max-w-[800px] rounded-card overflow-hidden">
+        <div class="p-4 bg-udora-600 text-white flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Estimate Preview</h3>
+          <button onclick="closePreview()" class="text-white text-2xl leading-none">&times;</button>
         </div>
-        <div
-          id="previewContent"
-          style="padding: 2rem; max-height: 70vh; overflow-y: auto"
-        ></div>
+        <div id="previewContent" class="p-8 max-h-[70vh] overflow-y-auto"></div>
       </div>
     </div>
 
-    <div id="toastContainer" class="toast-container"></div>
-
-    <!-- Footer -->
-    <footer class="footer mt-auto py-3">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-md-8 text-center text-md-start">
-            <span id="footerText" class="footer-text"></span>
-          </div>
-          <div class="col-md-4 text-center text-md-end">
-            <span class="footer-version">v1.2.2</span>
-          </div>
-        </div>
-      </div>
-    </footer>
-
-    <script>
-      let settings = {};
-      let lineItemCounter = 0;
-      let productCategories = [];
-      let productSort = { column: 'name', direction: 'asc' };
-
-      function showToast(message, type = 'success') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        container.appendChild(toast);
-
-        setTimeout(() => toast.classList.add('show'), 10);
-
-        setTimeout(() => {
-          toast.classList.remove('show');
-          setTimeout(() => container.removeChild(toast), 500);
-        }, 3000);
-      }
-
-      // Authentication
-      async function login() {
-        const password = document.getElementById('passwordInput').value;
-        console.log('Attempting login...');
-
-        try {
-          const response = await fetch('api.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=login&password=${encodeURIComponent(password)}`,
-          });
-
-          console.log('Response status:', response.status);
-          const result = await response.json();
-          console.log('Response data:', result);
-
-          if (result.success) {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            loadSettings();
-            loadEstimateHistory();
-          } else {
-            document.getElementById('loginError').textContent =
-              result.error || 'Login failed';
-            document.getElementById('loginError').style.display = 'block';
-          }
-        } catch (error) {
-          console.error('Login error:', error);
-          document.getElementById('loginError').textContent =
-            'Connection error';
-          document.getElementById('loginError').style.display = 'block';
-        }
-      }
-
-      async function logout() {
-        await fetch('api.php?action=logout');
-        location.reload();
-      }
-
-      // Navigation
-      function showSection(section) {
-        console.log('Switching to section:', section);
-        try {
-          document
-            .querySelectorAll('.section')
-            .forEach((s) => s.classList.remove('active'));
-          document
-            .querySelectorAll('.nav-btn')
-            .forEach((b) => b.classList.remove('active'));
-
-          const sectionElement = document.getElementById(section + 'Section');
-          if (sectionElement) {
-            sectionElement.classList.add('active');
-            console.log('Section activated:', section);
-          } else {
-            console.error('Section element not found for section:', section);
-          }
-
-          const navButton = document.querySelector(
-            `.nav-btn[onclick="showSection('${section}')"]`
-          );
-          if (navButton) {
-            navButton.classList.add('active');
-            console.log('Nav button activated for:', section);
-          } else {
-            console.error('Nav button not found for section:', section);
-          }
-
-          if (section === 'history') {
-            loadEstimateHistory();
-          } else if (section === 'products') {
-            loadProductsServices();
-          } else if (section === 'settings') {
-            loadProductCategories();
-            loadPackageCategories();
-          }
-        } catch (error) {
-          console.error('Error within showSection:', error);
-          alert('Error showing section: ' + section);
-        }
-      }
-
-      // Settings
-      async function loadSettings() {
-        try {
-          const response = await fetch('api.php?action=get_settings');
-          settings = await response.json();
-
-          // Populate settings form
-          Object.keys(settings).forEach((key) => {
-            const element = document.getElementById(
-              key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
-            );
-            if (element) {
-              element.value = settings[key];
-            }
-          });
-
-          // Update dynamic elements
-          updateDynamicContent(settings);
-        } catch (error) {
-          console.error('Error loading settings:', error);
-        }
-      }
-
-      async function saveSettings() {
-        const settingsData = {};
-        const inputs = document.querySelectorAll(
-          '#settingsSection input, #settingsSection textarea'
-        );
-
-        inputs.forEach((input) => {
-          const key = input.id.replace(/([A-Z])/g, '_$1').toLowerCase();
-          settingsData[key] = input.value;
-        });
-
-        try {
-          const response = await fetch('api.php?action=update_settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settingsData),
-          });
-
-          if (response.ok) {
-            showToast('Settings saved successfully!');
-            settings = { ...settings, ...settingsData };
-            updateDynamicContent(settings);
-          }
-        } catch (error) {
-          console.error('Error saving settings:', error);
-          showToast('Error saving settings', 'error');
-        }
-      }
-
-      function updateDynamicContent(settings) {
-        // Update tax rate display
-        document.getElementById('taxRateDisplay').textContent =
-          settings.tax_rate || '13';
-
-        // Update sales commission display
-        const salesCommissionRate = settings.sales_rep_commission || '0';
-        document.getElementById('salesCommissionDisplay').textContent =
-          salesCommissionRate;
-        document.getElementById('salesCommissionRateDisplay').textContent =
-          salesCommissionRate;
-
-        // Update company name in header and page title
-        const companyName = settings.company_name || 'Udora Safety';
-        const currentYear = new Date().getFullYear();
-
-        // Update page title
-        document.getElementById(
-          'pageTitle'
-        ).textContent = `${companyName} - Estimate Generator`;
-
-        // Update header title
-        document.getElementById(
-          'headerTitle'
-        ).textContent = `${companyName} - Estimate Generator`;
-
-        // Update footer
-        document.getElementById(
-          'footerText'
-        ).innerHTML = `${companyName} Estimator &copy; ${currentYear}`;
-      }
-
-      // Line Items
-      function addLineItem() {
-        const container = document.getElementById('lineItemsList');
-        const itemId = `lineItem${lineItemCounter++}`;
-
-        const lineItem = document.createElement('div');
-        lineItem.className = 'line-item';
-        lineItem.id = itemId;
-        lineItem.innerHTML = `
-                <input type="text" placeholder="Description" onchange="calculateTotals()">
-                <input type="number" min="1" value="1" onchange="calculateTotals()">
-                <input type="number" step="0.01" min="0" placeholder="0.00" onchange="calculateTotals()">
-                <select onchange="updateMarkup('${itemId}'); calculateTotals()">
-                    <option value="hardware">Hardware</option>
-                    <option value="parts_materials">Parts/Materials</option>
-                    <option value="labor">Labor</option>
-                </select>
-                <input type="number" step="0.01" min="0" readonly>
-                <span class="line-total">$0.00</span>
-                <button type="button" onclick="removeLineItem('${itemId}')" class="btn btn-danger">Remove</button>
-            `;
-
-        container.appendChild(lineItem);
-        updateMarkup(itemId);
-      }
-
-      function removeLineItem(itemId) {
-        document.getElementById(itemId).remove();
-        calculateTotals();
-      }
-
-      function updateMarkup(itemId) {
-        const lineItem = document.getElementById(itemId);
-        const category = lineItem.querySelector('select').value;
-        const inputs = lineItem.querySelectorAll('input');
-        const markupInput = inputs[3]; // The 4th input is the markup percentage field
-
-        let markupPercent = 0;
-        switch (category) {
-          case 'hardware':
-            markupPercent = parseFloat(settings.hardware_markup || 25);
-            break;
-          case 'parts_materials':
-            markupPercent = parseFloat(settings.parts_materials_markup || 30);
-            break;
-          case 'labor':
-            markupPercent = parseFloat(settings.labor_markup || 0);
-            break;
-        }
-
-        if (markupInput) {
-          markupInput.value = markupPercent;
-        }
-      }
-
-      function calculateTotals() {
-        let subtotal = 0;
-
-        document
-          .querySelectorAll('.line-item:not(.line-item-header)')
-          .forEach((item) => {
-            const inputs = item.querySelectorAll('input');
-            const quantity = parseFloat(inputs[1].value || 0);
-            const unitCost = parseFloat(inputs[2].value || 0);
-            const markupPercent = parseFloat(inputs[3].value || 0);
-
-            const lineTotal = quantity * unitCost * (1 + markupPercent / 100);
-            item.querySelector(
-              '.line-total'
-            ).textContent = `$${lineTotal.toFixed(2)}`;
-            subtotal += lineTotal;
-          });
-
-        const taxRate = parseFloat(settings.tax_rate || 13) / 100;
-        const taxAmount = subtotal * taxRate;
-
-        let salesCommissionAmount = 0;
-        if (document.getElementById('applySalesCommission').checked) {
-          const salesCommissionRate =
-            parseFloat(settings.sales_rep_commission || 0) / 100;
-          salesCommissionAmount = subtotal * salesCommissionRate;
-          document.getElementById('salesCommissionRow').style.display = 'flex';
-          document.getElementById(
-            'salesCommissionAmount'
-          ).textContent = `$${salesCommissionAmount.toFixed(2)}`;
-        } else {
-          document.getElementById('salesCommissionRow').style.display = 'none';
-        }
-
-        const total = subtotal + taxAmount + salesCommissionAmount;
-
-        document.getElementById(
-          'subtotalAmount'
-        ).textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById(
-          'taxAmount'
-        ).textContent = `$${taxAmount.toFixed(2)}`;
-        document.getElementById('totalAmount').textContent = `$${total.toFixed(
-          2
-        )}`;
-      }
-
-      // Save Estimate
-      async function saveEstimate() {
-        const lineItems = [];
-        document
-          .querySelectorAll('.line-item:not(.line-item-header)')
-          .forEach((item) => {
-            const inputs = item.querySelectorAll('input');
-            const select = item.querySelector('select');
-
-            lineItems.push({
-              description: inputs[0].value,
-              quantity: parseInt(inputs[1].value || 0),
-              unit_cost: parseFloat(inputs[2].value || 0),
-              category: select.value,
-              markup_percent: parseFloat(inputs[3].value || 0),
-              line_total: parseFloat(
-                item.querySelector('.line-total').textContent.replace('$', '')
-              ),
-            });
-          });
-
-        const estimateData = {
-          client_name: document.getElementById('clientName').value,
-          client_email: document.getElementById('clientEmail').value,
-          client_phone: document.getElementById('clientPhone').value,
-          project_address: document.getElementById('projectAddress').value,
-          project_type: document.getElementById('projectType').value,
-          system_types: [], // Empty array since system types are now in notes
-          line_items: lineItems,
-          subtotal: parseFloat(
-            document
-              .getElementById('subtotalAmount')
-              .textContent.replace('$', '')
-          ),
-          tax_amount: parseFloat(
-            document.getElementById('taxAmount').textContent.replace('$', '')
-          ),
-          total_amount: parseFloat(
-            document.getElementById('totalAmount').textContent.replace('$', '')
-          ),
-          notes: document.getElementById('estimateNotes').value,
-          status: document.getElementById('estimateStatus').value,
-        };
-
-        if (!estimateData.client_name) {
-          alert('Please enter a client name');
-          return;
-        }
-
-        if (lineItems.length === 0) {
-          alert('Please add at least one line item');
-          return;
-        }
-
-        try {
-          const response = await fetch('api.php?action=save_estimate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(estimateData),
-          });
-
-          const result = await response.json();
-          if (result.success) {
-            showToast(`Estimate ${result.estimate_number} saved successfully!`);
-            clearEstimateForm();
-            loadEstimateHistory();
-          } else {
-            showToast(
-              'Error saving estimate: ' + (result.error || 'Unknown error'),
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error saving estimate:', error);
-          showToast('Error saving estimate', 'error');
-        }
-      }
-
-      function clearEstimateForm() {
-        document.getElementById('clientName').value = '';
-        document.getElementById('clientEmail').value = '';
-        document.getElementById('clientPhone').value = '';
-        document.getElementById('projectAddress').value = '';
-        document.getElementById('projectType').value = 'residential';
-        document.getElementById('estimateNotes').value = '';
-        document.getElementById('estimateStatus').value = 'draft';
-        document.getElementById('lineItemsList').innerHTML = '';
-        calculateTotals();
-      }
-
-      // Estimate History
-      async function loadEstimateHistory() {
-        try {
-          const response = await fetch('api.php?action=get_estimates');
-          const estimates = await response.json();
-
-          const container = document.getElementById('estimateHistory');
-          container.innerHTML = `
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Estimate #</th>
-                                <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Client</th>
-                                <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Project Type</th>
-                                <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Status</th>
-                                <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Total</th>
-                                <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Date</th>
-                                <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${estimates
-                              .map(
-                                (est) => `
-                                <tr>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">${
-                                      est.estimate_number
-                                    }</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">${
-                                      est.client_name
-                                    }</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">${
-                                      est.project_type
-                                    }</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">
-                                        <select class="status-badge status-${
-                                          est.status
-                                        }" onchange="updateEstimateStatus(${
-                                  est.id
-                                }, this.value)">
-                                            <option value="draft" ${
-                                              est.status === 'draft'
-                                                ? 'selected'
-                                                : ''
-                                            }>Draft</option>
-                                            <option value="sent" ${
-                                              est.status === 'sent'
-                                                ? 'selected'
-                                                : ''
-                                            }>Sent</option>
-                                            <option value="approved" ${
-                                              est.status === 'approved'
-                                                ? 'selected'
-                                                : ''
-                                            }>Approved</option>
-                                        </select>
-                                    </td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">$${parseFloat(
-                                      est.total_amount
-                                    ).toFixed(2)}</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">${new Date(
-                                      est.created_at
-                                    ).toLocaleDateString()}</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">
-                                        <button onclick="viewEstimate(${
-                                          est.id
-                                        })" class="btn" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">View</button>
-                                        <button onclick="editEstimate(${
-                                          est.id
-                                        })" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Edit</button>
-                                        <button onclick="deleteEstimate(${
-                                          est.id
-                                        })" class="btn btn-danger" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Delete</button>
-                                    </td>
-                                </tr>
-                            `
-                              )
-                              .join('')}
-                        </tbody>
-                </table>
-            `;
-        } catch (error) {
-          console.error('Error loading estimate history:', error);
-        }
-      }
-
-      async function viewEstimate(id) {
-        try {
-          const response = await fetch(`api.php?action=get_estimate&id=${id}`);
-          const estimate = await response.json();
-
-          console.log('View estimate API response:', estimate);
-
-          // Check if we got a valid estimate object
-          if (estimate && estimate.client_name !== undefined) {
-            generateEstimatePreview(estimate);
-            document.getElementById('previewModal').style.display = 'block';
-          } else {
-            console.error('Invalid estimate data for viewing:', estimate);
-            alert('Error: Could not load estimate data for viewing.');
-          }
-        } catch (error) {
-          console.error('Error viewing estimate:', error);
-          alert('Error loading estimate for viewing');
-        }
-      }
-
-      async function editEstimate(id) {
-        try {
-          console.log('Starting editEstimate for ID:', id);
-          const response = await fetch(`api.php?action=get_estimate&id=${id}`);
-          const estimate = await response.json();
-
-          console.log('Edit estimate API response:', estimate);
-
-          // Check if we got a valid estimate object (not just {success: true})
-          if (estimate && estimate.client_name !== undefined) {
-            console.log('Valid estimate data received, populating form...');
-            try {
-              populateEstimateForm(estimate);
-              console.log('Form populated successfully');
-            } catch (formError) {
-              console.error('Error populating form:', formError);
-              alert('Error populating the form with estimate data');
-              return;
-            }
-
-            try {
-              showSection('estimate');
-              console.log('Switched to estimate section');
-            } catch (sectionError) {
-              console.error('Error switching sections:', sectionError);
-              alert('Error switching to estimate section');
-              return;
-            }
-
-            try {
-              // Change the save button to update button
-              const saveBtn = document.querySelector(
-                'button[onclick="saveEstimate()"]'
-              );
-              if (saveBtn) {
-                saveBtn.textContent = 'Update Estimate';
-                saveBtn.onclick = () => updateEstimate(id);
-                console.log('Save button updated to Update mode');
-              } else {
-                console.error('Could not find save button');
-              }
-            } catch (buttonError) {
-              console.error('Error updating save button:', buttonError);
-            }
-          } else {
-            console.error('Invalid estimate data received:', estimate);
-            alert(
-              'Error: Could not load estimate data. The estimate may not exist or there was a server error.'
-            );
-          }
-        } catch (error) {
-          console.error('Error loading estimate for edit:', error);
-          alert('Error loading estimate for editing');
-        }
-      }
-
-      async function updateEstimate(id) {
-        const lineItems = gatherLineItems();
-        const estimateData = createEstimateData(lineItems, id);
-
-        if (!validateEstimateData(estimateData, lineItems)) return;
-
-        try {
-          const response = await fetch('api.php?action=update_estimate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(estimateData),
-          });
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Estimate updated successfully!');
-            clearEstimateForm();
-            resetSaveButton();
-            loadEstimateHistory();
-            showSection('history');
-          } else {
-            showToast(
-              'Error updating estimate: ' + (result.error || 'Unknown error'),
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error updating estimate:', error);
-          showToast('Error updating estimate', 'error');
-        }
-      }
-
-      async function deleteEstimate(id) {
-        if (
-          !confirm(
-            'Are you sure you want to delete this estimate? This action cannot be undone.'
-          )
-        ) {
-          return;
-        }
-
-        try {
-          const response = await fetch(
-            `api.php?action=delete_estimate&id=${id}`,
-            {
-              method: 'POST',
-            }
-          );
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Estimate deleted successfully!');
-            loadEstimateHistory();
-          } else {
-            showToast(
-              'Error deleting estimate: ' + (result.error || 'Unknown error'),
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error deleting estimate:', error);
-          showToast('Error deleting estimate', 'error');
-        }
-      }
-
-      async function updateEstimateStatus(id, status) {
-        try {
-          const response = await fetch(
-            'api.php?action=update_estimate_status',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id, status }),
-            }
-          );
-          const result = await response.json();
-          if (result.success) {
-            // alert('Status updated successfully!');
-            loadEstimateHistory(); // Refresh history to show updated status color
-          } else {
-            alert(
-              'Error updating status: ' + (result.error || 'Unknown error')
-            );
-          }
-        } catch (error) {
-          console.error('Error updating status:', error);
-          alert('Error updating status');
-        }
-      }
-
-      function gatherLineItems() {
-        const lineItems = [];
-        document
-          .querySelectorAll('.line-item:not(.line-item-header)')
-          .forEach((item) => {
-            const inputs = item.querySelectorAll('input');
-            const select = item.querySelector('select');
-
-            lineItems.push({
-              description: inputs[0].value,
-              quantity: parseInt(inputs[1].value || 0),
-              unit_cost: parseFloat(inputs[2].value || 0),
-              category: select.value,
-              markup_percent: parseFloat(inputs[3].value || 0),
-              line_total: parseFloat(
-                item.querySelector('.line-total').textContent.replace('$', '')
-              ),
-            });
-          });
-        return lineItems;
-      }
-
-      function createEstimateData(lineItems, id = null) {
-        return {
-          id: id,
-          client_name: document.getElementById('clientName').value,
-          client_email: document.getElementById('clientEmail').value,
-          client_phone: document.getElementById('clientPhone').value,
-          project_address: document.getElementById('projectAddress').value,
-          project_type: document.getElementById('projectType').value,
-          system_types: [], // Empty array since system types are now in notes
-          line_items: lineItems,
-          subtotal: parseFloat(
-            document
-              .getElementById('subtotalAmount')
-              .textContent.replace('$', '')
-          ),
-          tax_amount: parseFloat(
-            document.getElementById('taxAmount').textContent.replace('$', '')
-          ),
-          total_amount: parseFloat(
-            document.getElementById('totalAmount').textContent.replace('$', '')
-          ),
-          notes: document.getElementById('estimateNotes').value,
-          status: document.getElementById('estimateStatus').value,
-        };
-      }
-
-      function validateEstimateData(data, lineItems) {
-        if (!data.client_name) {
-          alert('Please enter a client name');
-          return false;
-        }
-        if (lineItems.length === 0) {
-          alert('Please add at least one line item');
-          return false;
-        }
-        return true;
-      }
-
-      function populateEstimateForm(estimate) {
-        // Clear existing line items
-        document.getElementById('lineItemsList').innerHTML = '';
-
-        // Populate client information
-        document.getElementById('clientName').value =
-          estimate.client_name || '';
-        document.getElementById('clientEmail').value =
-          estimate.client_email || '';
-        document.getElementById('clientPhone').value =
-          estimate.client_phone || '';
-        document.getElementById('projectAddress').value =
-          estimate.project_address || '';
-        document.getElementById('projectType').value =
-          estimate.project_type || 'residential';
-
-        // Populate notes
-        document.getElementById('estimateNotes').value = estimate.notes || '';
-        document.getElementById('estimateStatus').value =
-          estimate.status || 'draft';
-
-        // Populate line items
-        if (estimate.line_items && estimate.line_items.length > 0) {
-          estimate.line_items.forEach((item) => {
-            addLineItem();
-            const lineItemsList = document.getElementById('lineItemsList');
-            const lastItem = lineItemsList.lastElementChild;
-            const inputs = lastItem.querySelectorAll('input');
-            const select = lastItem.querySelector('select');
-
-            inputs[0].value = item.description || '';
-            inputs[1].value = item.quantity || 1;
-            inputs[2].value = item.unit_cost || 0;
-            select.value = item.category || 'hardware';
-            inputs[3].value = item.markup_percent || 0;
-
-            // Update the line total display
-            lastItem.querySelector('.line-total').textContent = `$${parseFloat(
-              item.line_total || 0
-            ).toFixed(2)}`;
-          });
-        } else {
-          // Add at least one line item if none exist
-          addLineItem();
-        }
-
-        // Recalculate totals
-        calculateTotals();
-      }
-
-      function resetSaveButton() {
-        const saveBtn = document.querySelector('button[onclick*="Estimate"]');
-        if (saveBtn) {
-          saveBtn.textContent = 'Save Estimate';
-          saveBtn.onclick = saveEstimate;
-        }
-      }
-
-      // Preview Functions
-      function previewEstimate() {
-        const lineItems = [];
-        document
-          .querySelectorAll('.line-item:not(.line-item-header)')
-          .forEach((item) => {
-            const inputs = item.querySelectorAll('input');
-            const select = item.querySelector('select');
-
-            if (inputs[0].value) {
-              lineItems.push({
-                description: inputs[0].value,
-                quantity: parseInt(inputs[1].value || 0),
-                unit_cost: parseFloat(inputs[2].value || 0),
-                category: select.value,
-                markup_percent: parseFloat(inputs[3].value || 0),
-                line_total: parseFloat(
-                  item.querySelector('.line-total').textContent.replace('$', '')
-                ),
-              });
-            }
-          });
-
-        const estimateData = {
-          estimate_number: 'PREVIEW',
-          client_name:
-            document.getElementById('clientName').value || 'Sample Client',
-          client_email: document.getElementById('clientEmail').value,
-          client_phone: document.getElementById('clientPhone').value,
-          project_address: document.getElementById('projectAddress').value,
-          project_type: document.getElementById('projectType').value,
-          system_types: [], // Empty array since system types are now in notes
-          line_items: lineItems,
-          subtotal: parseFloat(
-            document
-              .getElementById('subtotalAmount')
-              .textContent.replace('$', '')
-          ),
-          tax_amount: parseFloat(
-            document.getElementById('taxAmount').textContent.replace('$', '')
-          ),
-          total_amount: parseFloat(
-            document.getElementById('totalAmount').textContent.replace('$', '')
-          ),
-        };
-
-        generateEstimatePreview(estimateData);
-        document.getElementById('previewModal').style.display = 'block';
-      }
-
-      function generateEstimatePreview(estimate) {
-        const systemTypeLabels = {
-          cctv: 'CCTV/Security Cameras',
-          alarm: 'Alarm Systems',
-          access: 'Access Control',
-          cabling: 'Structured Cabling',
-        };
-
-        const content = `
-                <div class="estimate-preview">
-                    <div class="company-header">
-                        <h1>${settings.company_name || 'Udora Safety'}</h1>
-                        <p>${settings.company_phone || '416 853 2603'} | ${
-          settings.company_email || 'info@udorasafety.com'
-        }</p>
-                        <h2>ESTIMATE</h2>
-                    </div>
-
-                    <div class="estimate-info">
-                        <div>
-                            <h3>Bill To:</h3>
-                            <p><strong>${estimate.client_name}</strong></p>
-                            ${
-                              estimate.client_email
-                                ? `<p>${estimate.client_email}</p>`
-                                : ''
-                            }
-                            ${
-                              estimate.client_phone
-                                ? `<p>${estimate.client_phone}</p>`
-                                : ''
-                            }
-                            ${
-                              estimate.project_address
-                                ? `<p>${estimate.project_address}</p>`
-                                : ''
-                            }
-                        </div>
-                        <div>
-                            <h3>Estimate Details:</h3>
-                            <p><strong>Estimate #:</strong> ${
-                              estimate.estimate_number
-                            }</p>
-                            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                            <p><strong>Project Type:</strong> ${
-                              estimate.project_type
-                            }</p>
-            ${
-              estimate.system_types && estimate.system_types.length > 0
-                ? `<p><strong>Systems:</strong> ${estimate.system_types
-                    .map((type) => systemTypeLabels[type] || type)
-                    .join(', ')}</p>`
-                : ''
-            }
-        </div>
-    </div>
-
-    <table style="width: 100%; border-collapse: collapse; margin: 2rem 0;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Description</th>
-                                <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: center;">Qty</th>
-                                <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: right;">Unit Cost</th>
-                                <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: right;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${estimate.line_items
-                              .map(
-                                (item) => `
-                                <tr>
-                                    <td style="padding: 0.75rem; border: 1px solid #ddd;">${
-                                      item.description
-                                    }</td>
-                                    <td style="padding: 0.75rem; border: 1px solid #ddd; text-align: center;">${
-                                      item.quantity
-                                    }</td>
-                                    <td style="padding: 0.75rem; border: 1px solid #ddd; text-align: right;">${parseFloat(
-                                      item.unit_cost
-                                    ).toFixed(2)}</td>
-                                    <td style="padding: 0.75rem; border: 1px solid #ddd; text-align: right;">${parseFloat(
-                                      item.line_total
-                                    ).toFixed(2)}</td>
-                                </tr>
-                            `
-                              )
-                              .join('')}
-                        </tbody>
-                    </table>
-
-                    <div style="text-align: right; margin: 2rem 0;">
-                        <div style="display: inline-block; text-align: left;">
-                            <div style="margin-bottom: 0.5rem;">
-                                <span style="display: inline-block; width: 120px;">Subtotal:</span>
-                                <span style="font-weight: bold;">${parseFloat(
-                                  estimate.subtotal
-                                ).toFixed(2)}</span>
-                            </div>
-                            <div style="margin-bottom: 0.5rem;">
-                                <span style="display: inline-block; width: 120px;">Tax (${
-                                  settings.tax_rate || 13
-                                }%):</span>
-                                <span style="font-weight: bold;">${parseFloat(
-                                  estimate.tax_amount
-                                ).toFixed(2)}</span>
-                            </div>
-                            <div style="border-top: 2px solid #1e3c72; padding-top: 0.5rem; font-size: 1.2rem;">
-                                <span style="display: inline-block; width: 120px;">Total:</span>
-                                <span style="font-weight: bold;">${parseFloat(
-                                  estimate.total_amount
-                                ).toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #ddd;">
-                        <h3>Terms & Conditions</h3>
-                        <p><strong>Payment Terms:</strong> ${
-                          settings.payment_terms || 'Net 30 days'
-                        }</p>
-                        <p><strong>Warranty:</strong> ${
-                          settings.warranty_terms ||
-                          '1 year parts and labor warranty'
-                        }</p>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
-                            This estimate is valid for 30 days from the date issued. All work will be completed according to industry standards and local building codes.
-                        </p>
-                    </div>
-
-                    <div style="margin-top: 2rem; text-align: center;">
-                        <button onclick="printEstimate()" class="btn">Print Estimate</button>
-                        <button onclick="closePreview()" class="btn btn-secondary">Close</button>
-                    </div>
-                </div>
-            `;
-
-        document.getElementById('previewContent').innerHTML = content;
-      }
-
-      function closePreview() {
-        document.getElementById('previewModal').style.display = 'none';
-      }
-
-      function printEstimate() {
-        const printContent =
-          document.getElementById('previewContent').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Estimate</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            .company-header { text-align: center; border-bottom: 2px solid #1e3c72; padding-bottom: 1rem; margin-bottom: 2rem; }
-                            .estimate-info { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
-                            table { width: 100%; border-collapse: collapse; }
-                            th, td { border: 1px solid #ddd; padding: 8px; }
-                            th { background: #f8f9fa; }
-                            .btn { display: none; }
-                        </style>
-                    </head>
-                    <body>${printContent}</body>
-                </html>
-            `);
-        printWindow.document.close();
-        printWindow.print();
-      }
-
-      // Products & Services Management
-      let editingProductId = null;
-      let allProducts = []; // Store all products for filtering
-      let currentPage = 1;
-      const itemsPerPage = 20;
-
-      async function loadProductsServices() {
-        try {
-          const response = await fetch('api.php?action=get_products_services');
-          const products = await response.json();
-
-          allProducts = products;
-          loadProductCategories(); // Also load categories
-          filterProducts();
-        } catch (error) {
-          console.error('Error loading products/services:', error);
-        }
-      }
-
-      // CSV Export
-      function exportProductsCSV() {
-        fetch('api.php?action=get_products_services')
-          .then((response) => response.json())
-          .then((products) => {
-            // Helper function to escape CSV values
-            const escapeCSV = (value) => {
-              if (value === null || value === undefined) return '';
-              const stringValue = String(value);
-              if (
-                stringValue.includes(',') ||
-                stringValue.includes('"') ||
-                stringValue.includes('\n')
-              ) {
-                return '"' + stringValue.replace(/"/g, '""') + '"';
-              }
-              return stringValue;
-            };
-
-            const csvContent =
-              'data:text/csv;charset=utf-8,' +
-              ['SKU,Name,Category,Unit Cost,Description']
-                .concat(
-                  products.map(
-                    (p) =>
-                      `${escapeCSV(p.sku || '')},${escapeCSV(
-                        p.name
-                      )},${escapeCSV(p.category)},${escapeCSV(
-                        p.unit_cost
-                      )},${escapeCSV(p.description || '')}`
-                  )
-                )
-                .join('\n');
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', 'products_services.csv');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          });
-      }
-
-      // CSV Import
-      function showImportForm() {
-        document.getElementById('importFormContainer').style.display = 'block';
-        const form = `
-                <div class="form-group">
-                    <label>Select CSV File</label>
-                    <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom: 1rem;">
-                    <div style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">
-                        <strong>CSV Format:</strong> SKU, Name, Category, Unit Cost, Description<br>
-                        <strong>Categories:</strong> ${
-                          productCategories.map((c) => c.name).join(', ') ||
-                          '(Setup categories in Settings)'
-                        }
-                    </div>
-                </div>
-                <div style="margin-top: 1rem;">
-                    <button onclick="importProductsCSV()" class="btn">Import Products</button>
-                    <button onclick="cancelImport()" class="btn btn-secondary">Cancel</button>
-                </div>
-            `;
-        document.getElementById('importForm').innerHTML = form;
-      }
-
-      function cancelImport() {
-        document.getElementById('importFormContainer').style.display = 'none';
-      }
-
-      function importProductsCSV() {
-        const fileInput = document.getElementById('csvFileInput');
-        if (!fileInput.files.length) {
-          alert('Please select a CSV file to import.');
-          return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          const csvData = event.target.result;
-          const rows = csvData
-            .split('\n')
-            .filter((row) => row.trim().length > 0);
-
-          // Helper function to parse CSV row with proper quote handling
-          const parseCSVRow = (row) => {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-
-            for (let i = 0; i < row.length; i++) {
-              const char = row[i];
-
-              if (char === '"') {
-                if (inQuotes && row[i + 1] === '"') {
-                  current += '"';
-                  i++; // Skip next quote
-                } else {
-                  inQuotes = !inQuotes;
-                }
-              } else if (char === ',' && !inQuotes) {
-                result.push(current.trim());
-                current = '';
-              } else {
-                current += char;
-              }
-            }
-
-            result.push(current.trim());
-            return result;
-          };
-
-          const products = rows
-            .slice(1)
-            .map((row) => {
-              const [sku, name, category, unit_cost, description] =
-                parseCSVRow(row);
-              return {
-                sku: sku || '',
-                name: name || '',
-                category: category || 'hardware',
-                unit_cost: parseFloat(unit_cost) || 0,
-                description: description || '',
-              };
-            })
-            .filter((product) => product.name.length > 0); // Filter out empty rows
-
-          if (products.length === 0) {
-            alert('No valid products found in the CSV file.');
-            return;
-          }
-
-          fetch('api.php?action=import_products_services', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(products),
-          })
-            .then((response) => response.json())
-            .then((result) => {
-              if (result.success) {
-                showToast(`${result.imported} products imported successfully!`);
-                loadProductsServices();
-                cancelImport();
-              } else {
-                let message = `Error importing products: ${
-                  result.error || 'Unknown error'
-                }`;
-                if (result.imported > 0) {
-                  message += `\n${result.imported} products were imported successfully.`;
-                }
-                if (result.errors && result.errors.length > 0) {
-                  message += '\n\nErrors:\n' + result.errors.join('\n');
-                }
-                showToast(message, 'error');
-              }
-            })
-            .catch((error) => {
-              console.error('Import error:', error);
-              showToast(
-                'Error importing products: Network or server error',
-                'error'
-              );
-            });
-        };
-
-        reader.readAsText(file);
-      }
-
-      // ========== ESTIMATE EXPORT/IMPORT FUNCTIONS ==========
-      
-      // Export Estimates to CSV
-      function exportEstimatesCSV() {
-        fetch('api.php?action=get_detailed_estimates')
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then((data) => {
-            // Check if response contains an error
-            if (data.error) {
-              throw new Error(data.error);
-            }
-            
-            // Ensure data is an array
-            if (!Array.isArray(data)) {
-              console.error('API response is not an array:', data);
-              throw new Error('Invalid response format: expected array of estimates');
-            }
-            
-            const estimates = data;
-            // Helper function to escape CSV values
-            const escapeCSV = (value) => {
-              if (value === null || value === undefined) return '';
-              const stringValue = String(value);
-              if (
-                stringValue.includes(',') ||
-                stringValue.includes('"') ||
-                stringValue.includes('\n')
-              ) {
-                return '"' + stringValue.replace(/"/g, '""') + '"';
-              }
-              return stringValue;
-            };
-
-            // Create comprehensive CSV with estimate details and line items
-            const csvRows = [];
-            
-            // CSV Header
-            csvRows.push('Estimate Number,Client Name,Client Email,Client Phone,Project Address,Project Type,Status,Subtotal,Tax Amount,Total Amount,Notes,Created Date,Line Item Description,Line Item Quantity,Line Item Unit Cost,Line Item Category,Line Item Markup %,Line Item Total');
-            
-            // Process each estimate
-            estimates.forEach(estimate => {
-              const baseRow = [
-                escapeCSV(estimate.estimate_number),
-                escapeCSV(estimate.client_name),
-                escapeCSV(estimate.client_email),
-                escapeCSV(estimate.client_phone),
-                escapeCSV(estimate.project_address),
-                escapeCSV(estimate.project_type),
-                escapeCSV(estimate.status),
-                escapeCSV(estimate.subtotal),
-                escapeCSV(estimate.tax_amount),
-                escapeCSV(estimate.total_amount),
-                escapeCSV(estimate.notes),
-                escapeCSV(new Date(estimate.created_at).toLocaleDateString())
-              ];
-              
-              // If estimate has line items, create a row for each line item
-              if (estimate.line_items && estimate.line_items.length > 0) {
-                estimate.line_items.forEach(item => {
-                  const lineItemRow = [
-                    ...baseRow,
-                    escapeCSV(item.description),
-                    escapeCSV(item.quantity),
-                    escapeCSV(item.unit_cost),
-                    escapeCSV(item.category),
-                    escapeCSV(item.markup_percent),
-                    escapeCSV(item.line_total)
-                  ];
-                  csvRows.push(lineItemRow.join(','));
-                });
-              } else {
-                // If no line items, add empty line item columns
-                const emptyLineItemRow = [...baseRow, '', '', '', '', '', ''];
-                csvRows.push(emptyLineItemRow.join(','));
-              }
-            });
-
-            const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `estimates_export_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('Estimates exported successfully!');
-          })
-          .catch(error => {
-            console.error('Error exporting estimates:', error);
-            showToast('Error exporting estimates', 'error');
-          });
-      }
-
-      // Show Estimate Import Form
-      function showEstimateImportForm() {
-        document.getElementById('estimateImportFormContainer').style.display = 'block';
-        const form = `
-                <div class="form-group">
-                    <label>Select CSV File</label>
-                    <input type="file" id="estimateCsvFileInput" accept=".csv" style="margin-bottom: 1rem;">
-                    <div style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">
-                        <strong>CSV Format:</strong><br>
-                        • The CSV should include columns for estimate details and line items<br>
-                        • Expected columns: Estimate Number, Client Name, Client Email, Client Phone, Project Address, Project Type, Status, Subtotal, Tax Amount, Total Amount, Notes, Created Date, Line Item Description, Line Item Quantity, Line Item Unit Cost, Line Item Category, Line Item Markup %, Line Item Total<br>
-                        • Multiple line items for the same estimate should be on separate rows<br>
-                        <strong>Note:</strong> This will create new estimates. Existing estimate numbers will be regenerated to avoid conflicts.
-                    </div>
-                </div>
-                <div style="margin-top: 1rem;">
-                    <button onclick="importEstimatesCSV()" class="btn">Import Estimates</button>
-                    <button onclick="cancelEstimateImport()" class="btn btn-secondary">Cancel</button>
-                </div>
-            `;
-        document.getElementById('estimateImportForm').innerHTML = form;
-      }
-
-      // Cancel Estimate Import
-      function cancelEstimateImport() {
-        document.getElementById('estimateImportFormContainer').style.display = 'none';
-      }
-
-      // Import Estimates from CSV
-      function importEstimatesCSV() {
-        const fileInput = document.getElementById('estimateCsvFileInput');
-        if (!fileInput.files.length) {
-          alert('Please select a CSV file to import.');
-          return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          const csvData = event.target.result;
-          const rows = csvData
-            .split('\n')
-            .filter((row) => row.trim().length > 0);
-
-          if (rows.length < 2) {
-            alert('CSV file appears to be empty or invalid.');
-            return;
-          }
-
-          // Helper function to parse CSV row with proper quote handling
-          const parseCSVRow = (row) => {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-
-            for (let i = 0; i < row.length; i++) {
-              const char = row[i];
-
-              if (char === '"') {
-                if (inQuotes && row[i + 1] === '"') {
-                  current += '"';
-                  i++; // Skip next quote
-                } else {
-                  inQuotes = !inQuotes;
-                }
-              } else if (char === ',' && !inQuotes) {
-                result.push(current.trim());
-                current = '';
-              } else {
-                current += char;
-              }
-            }
-
-            result.push(current.trim());
-            return result;
-          };
-
-          // Parse CSV data
-          const header = parseCSVRow(rows[0]);
-          const dataRows = rows.slice(1);
-          
-          // Group rows by estimate (assuming estimates with multiple line items have repeated estimate info)
-          const estimateGroups = {};
-          
-          dataRows.forEach((row, index) => {
-            try {
-              const columns = parseCSVRow(row);
-              if (columns.length < 12) {
-                console.warn(`Row ${index + 2} has insufficient columns, skipping`);
-                return;
-              }
-              
-              const estimateNumber = columns[0] || `IMPORT-${Date.now()}-${index}`;
-              
-              if (!estimateGroups[estimateNumber]) {
-                estimateGroups[estimateNumber] = {
-                  estimate_number: estimateNumber,
-                  client_name: columns[1] || '',
-                  client_email: columns[2] || '',
-                  client_phone: columns[3] || '',
-                  project_address: columns[4] || '',
-                  project_type: columns[5] || 'residential',
-                  status: columns[6] || 'draft',
-                  subtotal: parseFloat(columns[7]) || 0,
-                  tax_amount: parseFloat(columns[8]) || 0,
-                  total_amount: parseFloat(columns[9]) || 0,
-                  notes: columns[11] || '',
-                  line_items: []
-                };
-              }
-              
-              // Add line item if present
-              if (columns[12] && columns[12].trim()) {
-                estimateGroups[estimateNumber].line_items.push({
-                  description: columns[12] || '',
-                  quantity: parseInt(columns[13]) || 1,
-                  unit_cost: parseFloat(columns[14]) || 0,
-                  category: columns[15] || 'hardware',
-                  markup_percent: parseFloat(columns[16]) || 0,
-                  line_total: parseFloat(columns[17]) || 0
-                });
-              }
-            } catch (error) {
-              console.warn(`Error parsing row ${index + 2}:`, error);
-            }
-          });
-          
-          // Convert to array and filter valid estimates
-          const estimates = Object.values(estimateGroups)
-            .filter(est => est.client_name && est.client_name.trim().length > 0);
-
-          if (estimates.length === 0) {
-            alert('No valid estimates found in the CSV file.');
-            return;
-          }
-
-          // Send to server
-          fetch('api.php?action=import_estimates', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ estimates: estimates }),
-          })
-            .then((response) => response.json())
-            .then((result) => {
-              if (result.success) {
-                showToast(`${result.imported} estimates imported successfully!`);
-                loadEstimateHistory();
-                cancelEstimateImport();
-              } else {
-                let message = `Error importing estimates: ${
-                  result.error || 'Unknown error'
-                }`;
-                if (result.imported > 0) {
-                  message += `\n${result.imported} estimates were imported successfully.`;
-                }
-                if (result.errors && result.errors.length > 0) {
-                  message += '\n\nErrors:\n' + result.errors.join('\n');
-                }
-                showToast(message, 'error');
-              }
-            })
-            .catch((error) => {
-              console.error('Import error:', error);
-              showToast(
-                'Error importing estimates: Network or server error',
-                'error'
-              );
-            });
-        };
-
-        reader.readAsText(file);
-      }
-
-      async function loadProductCategories() {
-        try {
-          const response = await fetch('api.php?action=get_product_categories');
-          productCategories = await response.json();
-          renderCategoryList();
-          populateCategoryFilters();
-        } catch (error) {
-          console.error('Error loading product categories:', error);
-        }
-      }
-
-      function renderCategoryList() {
-        const container = document.getElementById('categoryList');
-        container.innerHTML =
-          '\u003ctable style="width: 100%; border-collapse: collapse; margin-top: 1rem;">\u003c/table>';
-        const table = container.querySelector('table');
-
-        if (productCategories.length === 0) {
-          table.innerHTML =
-            '\u003ctr>\u003ctd colspan="3" style="text-align: center; padding: 1rem; border: 1px solid #ddd;">No categories found. Add one below.\u003c/td>\u003c/tr>';
-          return;
-        }
-
-        table.innerHTML = `
-                \u003cthead>\n                    \u003ctr style="background: #f8f9fa;">\n                        \u003cth style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Category ID\u003c/th>\n                        \u003cth style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Display Name\u003c/th>\n                        \u003cth style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Actions\u003c/th>\n                    \u003c/tr>\n                \u003c/thead>\n                \u003ctbody>\n                    ${productCategories
-                  .map(
-                    (cat) => `
-                        \u003ctr>\n                            \u003ctd style="padding: 0.75rem; border: 1px solid #ddd;">${cat.name}\u003c/td>\n                            \u003ctd style="padding: 0.75rem; border: 1px solid #ddd;">${cat.label}\u003c/td>\n                            \u003ctd style="padding: 0.75rem; border: 1px solid #ddd;">\n                                \u003cbutton onclick="editCategory(${cat.id}, '${cat.name}', '${cat.label}')" class="btn btn-secondary" style="padding: 0.3rem 0.6rem;">Edit\u003c/button>\n                                \u003cbutton onclick="deleteCategory(${cat.id})" class="btn btn-danger" style="padding: 0.3rem 0.6rem;">Delete\u003c/button>\n                            \u003c/td>\n                        \u003c/tr>\n                    `
-                  )
-                  .join('')}\n                \u003c/tbody>\n            `;
-      }
-
-      async function addCategory() {
-        const nameInput = document.getElementById('newCategoryName');
-        const labelInput = document.getElementById('newCategoryLabel');
-        const name = nameInput.value.trim();
-        const label = labelInput.value.trim();
-
-        if (!name || !label) {
-          showToast('Both category ID and display name are required', 'error');
-          return;
-        }
-
-        try {
-          const response = await fetch('api.php?action=add_product_category', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, label }),
-          });
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Category added successfully!');
-            nameInput.value = '';
-            labelInput.value = '';
-            loadProductCategories();
-          } else {
-            showToast(
-              `Error adding category: ${result.error || 'Unknown error'}`,
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error adding category:', error);
-          showToast('Failed to add category', 'error');
-        }
-      }
-
-      function editCategory(id, currentName, currentLabel) {
-        const newName = prompt('Enter new category ID:', currentName);
-        if (newName === null) return;
-
-        const newLabel = prompt('Enter new display name:', currentLabel);
-        if (newLabel === null) return;
-
-        if (!newName.trim() || !newLabel.trim()) {
-          showToast('Category ID and name cannot be empty', 'error');
-          return;
-        }
-
-        updateCategory(id, newName.trim(), newLabel.trim());
-      }
-
-      async function updateCategory(id, name, label) {
-        try {
-          const response = await fetch(
-            'api.php?action=update_product_category',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id, name, label }),
-            }
-          );
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Category updated successfully!');
-            loadProductCategories();
-          } else {
-            showToast(
-              `Error updating category: ${result.error || 'Unknown error'}`,
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error updating category:', error);
-          showToast('Failed to update category', 'error');
-        }
-      }
-
-      async function deleteCategory(id) {
-        if (
-          !confirm(
-            'Are you sure you want to delete this category? This action cannot be undone and may affect existing products.'
-          )
-        ) {
-          return;
-        }
-
-        try {
-          const response = await fetch(
-            `api.php?action=delete_product_category&id=${id}`,
-            {
-              method: 'POST',
-            }
-          );
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Category deleted successfully!');
-            loadProductCategories();
-          } else {
-            showToast(
-              `Error deleting category: ${result.error || 'Unknown error'}`,
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error deleting category:', error);
-          showToast('Failed to delete category', 'error');
-        }
-      }
-
-      function populateCategoryFilters() {
-        const categoryFilter = document.getElementById('categoryFilter');
-        const currentVal = categoryFilter.value;
-        categoryFilter.innerHTML =
-          '<option value="all">All Categories</option>';
-        productCategories.forEach((cat) => {
-          categoryFilter.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
-        });
-        categoryFilter.value = currentVal;
-      }
-
-      function getCategoryLabel(category) {
-        const labels = {
-          hardware: 'Hardware',
-          parts_materials: 'Parts/Materials',
-          labor: 'Labor',
-        };
-        return labels[category] || category;
-      }
-
-      function showAddProductForm() {
-        editingProductId = null;
-        document.getElementById('addProductFormContainer').style.display =
-          'block';
-        document.getElementById('addProductFormTitle').textContent =
-          'Add New Product/Service';
-
-        const form = `
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>SKU/Product Code</label>
-                        <input type="text" id="productSku" placeholder="e.g., CAM-001, PANEL-002">
-                    </div>
-                    <div class="form-group">
-                        <label>Name *</label>
-                        <input type="text" id="productName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select id="productCategory">
-                            ${productCategories
-                              .map(
-                                (c) =>
-                                  `<option value="${c.name}">${c.name}</option>`
-                              )
-                              .join('')}
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Unit Cost ($)</label>
-                        <input type="number" id="productUnitCost" step="0.01" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="productDescription" rows="2"></textarea>
-                    </div>
-                </div>
-                <div style="margin-top: 1rem;">
-                    <button onclick="saveProduct()" class="btn">Save Product</button>
-                    <button onclick="cancelAddProduct()" class="btn btn-secondary">Cancel</button>
-                </div>
-            `;
-        document.getElementById('addProductForm').innerHTML = form;
-      }
-
-      function cancelAddProduct() {
-        editingProductId = null;
-        document.getElementById('addProductFormContainer').style.display =
-          'none';
-      }
-
-      async function saveProduct() {
-        const sku = document.getElementById('productSku').value.trim();
-        const name = document.getElementById('productName').value.trim();
-        const category = document.getElementById('productCategory').value;
-        const unitCost = parseFloat(
-          document.getElementById('productUnitCost').value || 0
-        );
-        const description = document
-          .getElementById('productDescription')
-          .value.trim();
-
-        if (!name) {
-          alert('Please enter a product/service name');
-          return;
-        }
-
-        const productData = {
-          sku,
-          name,
-          category,
-          unit_cost: unitCost,
-          description,
-        };
-
-        try {
-          let response;
-          if (editingProductId) {
-            productData.id = editingProductId;
-            response = await fetch('api.php?action=update_product_service', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(productData),
-            });
-          } else {
-            response = await fetch('api.php?action=save_product_service', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(productData),
-            });
-          }
-
-          const result = await response.json();
-          if (result.success) {
-            showToast(
-              editingProductId
-                ? 'Product updated successfully!'
-                : 'Product saved successfully!'
-            );
-            cancelAddProduct();
-            loadProductsServices();
-          } else {
-            showToast(
-              'Error saving product: ' + (result.error || 'Unknown error'),
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error saving product:', error);
-          showToast('Error saving product', 'error');
-        }
-      }
-
-      async function editProduct(id) {
-        const product = allProducts.find((p) => p.id == id);
-
-        if (product) {
-          editingProductId = id;
-          document.getElementById('addProductFormContainer').style.display =
-            'block';
-          document.getElementById('addProductFormTitle').textContent =
-            'Edit Product/Service';
-
-          const form = `
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>SKU/Product Code</label>
-                            <input type="text" id="productSku" value="${
-                              product.sku || ''
-                            }">
-                        </div>
-                        <div class="form-group">
-                            <label>Name *</label>
-                            <input type="text" id="productName" value="${
-                              product.name
-                            }" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Category</label>
-                            <select id="productCategory">
-                                ${productCategories
-                                  .map(
-                                    (c) =>
-                                      `<option value="${c.name}" ${
-                                        product.category === c.name
-                                          ? 'selected'
-                                          : ''
-                                      }>${c.name}</option>`
-                                  )
-                                  .join('')}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Unit Cost ($)</label>
-                            <input type="number" id="productUnitCost" step="0.01" min="0" value="${
-                              product.unit_cost || ''
-                            }">
-                        </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <textarea id="productDescription" rows="2">${
-                              product.description || ''
-                            }</textarea>
-                        </div>
-                    </div>
-                    <div style="margin-top: 1rem;">
-                        <button onclick="saveProduct()" class="btn">Update Product</button>
-                        <button onclick="cancelAddProduct()" class="btn btn-secondary">Cancel</button>
-                    </div>
-                `;
-          document.getElementById('addProductForm').innerHTML = form;
-        } else {
-          showToast('Error loading product data', 'error');
-        }
-      }
-
-      async function deleteProduct(id) {
-        if (
-          !confirm(
-            'Are you sure you want to delete this product/service? This action cannot be undone.'
-          )
-        ) {
-          return;
-        }
-
-        try {
-          const response = await fetch(
-            `api.php?action=delete_product_service&id=${id}`,
-            {
-              method: 'POST',
-            }
-          );
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Product deleted successfully!');
-            loadProductsServices();
-          } else {
-            showToast(
-              'Error deleting product: ' + (result.error || 'Unknown error'),
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error deleting product:', error);
-          showToast('Error deleting product', 'error');
-        }
-      }
-
-      async function deleteSelectedProducts() {
-        const selectedIds = Array.from(
-          document.querySelectorAll('.product-checkbox:checked')
-        ).map((cb) => cb.value);
-        if (selectedIds.length === 0) {
-          showToast('No products selected for deletion.', 'error');
-          return;
-        }
-
-        if (
-          !confirm(
-            `Are you sure you want to delete ${selectedIds.length} selected products? This action cannot be undone.`
-          )
-        ) {
-          return;
-        }
-
-        try {
-          const response = await fetch('api.php?action=bulk_delete_products', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: selectedIds }),
-          });
-
-          const result = await response.json();
-          if (result.success) {
-            showToast(`${result.deleted_count} products deleted successfully!`);
-            loadProductsServices();
-          } else {
-            showToast(
-              'Error deleting products: ' + (result.error || 'Unknown error'),
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error deleting products:', error);
-          showToast('Error deleting products', 'error');
-        }
-      }
-
-      function useProductInEstimate(name, unitCost, category) {
-        // Switch to the estimate section
-        showSection('estimate');
-
-        // Add a new line item with the product details
-        addLineItem();
-
-        // Get the last added line item and populate it
-        const lineItemsList = document.getElementById('lineItemsList');
-        const lastItem = lineItemsList.lastElementChild;
-        const inputs = lastItem.querySelectorAll('input');
-        const select = lastItem.querySelector('select');
-
-        inputs[0].value = name; // Description
-        inputs[1].value = 1; // Quantity
-        inputs[2].value = unitCost || 0; // Unit Cost
-        select.value = category; // Category
-
-        // Update markup and calculate totals
-        updateMarkup(lastItem.id);
-        calculateTotals();
-
-        showToast('Product added to estimate!');
-      }
-
-      function updateSort(column) {
-        if (productSort.column === column) {
-          productSort.direction =
-            productSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-          productSort.column = column;
-          productSort.direction = 'asc';
-        }
-        filterProducts();
-      }
-
-      function toggleDescription(element) {
-        element.parentElement.classList.toggle('expanded');
-      }
-
-      function updateBulkDeleteButton() {
-        const selectedCount = document.querySelectorAll(
-          '.product-checkbox:checked'
-        ).length;
-        const btn = document.getElementById('bulkDeleteBtn');
-        if (selectedCount > 0) {
-          btn.style.display = 'inline-block';
-          btn.textContent = `Delete Selected (${selectedCount})`;
-        } else {
-          btn.style.display = 'none';
-        }
-      }
-
-      // Filter and Search Functions
-      function filterProducts(page = 1) {
-        currentPage = page;
-        const searchQuery = document
-          .getElementById('productSearchInput')
-          .value.toLowerCase();
-        const categoryFilter = document.getElementById('categoryFilter').value;
-
-        let filtered = [...allProducts];
-
-        // Sorting
-        filtered.sort((a, b) => {
-          let valA = a[productSort.column];
-          let valB = b[productSort.column];
-
-          if (typeof valA === 'string') valA = valA.toLowerCase();
-          if (typeof valB === 'string') valB = valB.toLowerCase();
-
-          if (valA < valB) return productSort.direction === 'asc' ? -1 : 1;
-          if (valA > valB) return productSort.direction === 'asc' ? 1 : -1;
-          return 0;
-        });
-
-        // Filtering
-        filtered = filtered.filter((product) => {
-          const matchesSearch =
-            product.name.toLowerCase().includes(searchQuery) ||
-            (product.sku && product.sku.toLowerCase().includes(searchQuery)) ||
-            (product.description &&
-              product.description.toLowerCase().includes(searchQuery));
-          const matchesCategory =
-            categoryFilter === 'all' || product.category === categoryFilter;
-          return matchesSearch && matchesCategory;
-        });
-
-        const totalPages = Math.ceil(filtered.length / itemsPerPage);
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const paginatedProducts = filtered.slice(
-          startIndex,
-          startIndex + itemsPerPage
-        );
-
-        const container = document.getElementById('productsList');
-
-        if (paginatedProducts.length === 0) {
-          container.innerHTML =
-            '<p style="text-align: center; color: #666; margin: 2rem 0;">No matching products or services found.</p>';
-          updateFilterStatus(
-            0,
-            allProducts.length,
-            searchQuery,
-            categoryFilter
-          );
-          return;
-        }
-
-        const tableHTML = `
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #f8f9fa;">
-                            <th style="padding: 1rem; border: 1px solid #ddd; width: 20px;"><input type="checkbox" onchange="toggleAllCheckboxes(this.checked)"></th>
-                            <th class="sortable ${
-                              productSort.column === 'sku'
-                                ? 'sort-' + productSort.direction
-                                : ''
-                            }" style="padding: 1rem; border: 1px solid #ddd; text-align: left;" onclick="updateSort('sku')">SKU</th>
-                            <th class="sortable ${
-                              productSort.column === 'name'
-                                ? 'sort-' + productSort.direction
-                                : ''
-                            }" style="padding: 1rem; border: 1px solid #ddd; text-align: left;" onclick="updateSort('name')">Name</th>
-                            <th class="sortable ${
-                              productSort.column === 'category'
-                                ? 'sort-' + productSort.direction
-                                : ''
-                            }" style="padding: 1rem; border: 1px solid #ddd; text-align: left;" onclick="updateSort('category')">Category</th>
-                            <th class="sortable ${
-                              productSort.column === 'unit_cost'
-                                ? 'sort-' + productSort.direction
-                                : ''
-                            }" style="padding: 1rem; border: 1px solid #ddd; text-align: left;" onclick="updateSort('unit_cost')">Unit Cost</th>
-                            <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Description</th>
-                            <th style="padding: 1rem; border: 1px solid #ddd; text-align: left;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${paginatedProducts
-                          .map((product) => {
-                            const shortDesc =
-                              (product.description || '').length > 50
-                                ? (product.description || '').substring(0, 50) +
-                                  '...'
-                                : product.description || '';
-                            const hasMore =
-                              (product.description || '').length > 50;
-                            return `
-                                <tr>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;"><input type="checkbox" class="product-checkbox" value="${
-                                      product.id
-                                    }" onchange="updateBulkDeleteButton()"></td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">${
-                                      product.sku || ''
-                                    }</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">${
-                                      product.name
-                                    }</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">${getCategoryLabel(
-                                      product.category
-                                    )}</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">$${parseFloat(
-                                      product.unit_cost || 0
-                                    ).toFixed(2)}</td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;" class="description-cell">
-                                        <span class="short-desc">${shortDesc}</span>
-                                        <span class="full-desc">${
-                                          product.description || ''
-                                        }</span>
-                                        ${
-                                          hasMore
-                                            ? `<button class="toggle-desc-btn" onclick="toggleDescription(this)">Show More</button>`
-                                            : ''
-                                        }
-                                    </td>
-                                    <td style="padding: 1rem; border: 1px solid #ddd;">
-                                        <button onclick="editProduct(${
-                                          product.id
-                                        })" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Edit</button>
-                                        <button onclick="deleteProduct(${
-                                          product.id
-                                        })" class="btn btn-danger" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Delete</button>
-                                        <button onclick="useProductInEstimate('${product.name.replace(
-                                          /'/g,
-                                          "\\'"
-                                        )}', ${product.unit_cost}, '${
-                              product.category
-                            }')" class="btn" style="padding: 0.3rem 0.6rem; margin: 0.1rem;">Use in Estimate</button>
-                                    </td>
-                                </tr>
-                            `;
-                          })
-                          .join('')}
-                    </tbody>
-                </table>
-            `;
-
-        const paginationHTML = `
-                <div class="pagination">
-                    <button onclick="changePage(1)" ${
-                      currentPage === 1 ? 'disabled' : ''
-                    }>&laquo; First</button>
-                    <button onclick="changePage(${currentPage - 1})" ${
-          currentPage === 1 ? 'disabled' : ''
-        }>&lsaquo; Prev</button>
-                    <span class="page-info">Page ${currentPage} of ${totalPages}</span>
-                    <button onclick="changePage(${currentPage + 1})" ${
-          currentPage === totalPages ? 'disabled' : ''
-        }>Next &rsaquo;</button>
-                    <button onclick="changePage(${totalPages})" ${
-          currentPage === totalPages ? 'disabled' : ''
-        }>Last &raquo;</button>
-                </div>
-            `;
-
-        container.innerHTML =
-          tableHTML + (totalPages > 1 ? paginationHTML : '');
-
-        updateFilterStatus(
-          filtered.length,
-          allProducts.length,
-          searchQuery,
-          categoryFilter
-        );
-        updateBulkDeleteButton();
-      }
-
-      function toggleAllCheckboxes(checked) {
-        document.querySelectorAll('.product-checkbox').forEach((checkbox) => {
-          checkbox.checked = checked;
-        });
-        updateBulkDeleteButton();
-      }
-
-      function changePage(page) {
-        const totalPages = Math.ceil(
-          getFilteredProducts().length / itemsPerPage
-        );
-        if (page < 1) page = 1;
-        if (page > totalPages) page = totalPages;
-        filterProducts(page);
-      }
-
-      function getFilteredProducts() {
-        const searchQuery = document
-          .getElementById('productSearchInput')
-          .value.toLowerCase();
-        const categoryFilter = document.getElementById('categoryFilter').value;
-
-        let filtered = [...allProducts];
-
-        // Sorting
-        filtered.sort((a, b) => {
-          let valA = a[productSort.column];
-          let valB = b[productSort.column];
-
-          if (typeof valA === 'string') valA = valA.toLowerCase();
-          if (typeof valB === 'string') valB = valB.toLowerCase();
-
-          if (valA < valB) return productSort.direction === 'asc' ? -1 : 1;
-          if (valA > valB) return productSort.direction === 'asc' ? 1 : -1;
-          return 0;
-        });
-
-        // Filtering
-        return filtered.filter((product) => {
-          const matchesSearch =
-            product.name.toLowerCase().includes(searchQuery) ||
-            (product.sku && product.sku.toLowerCase().includes(searchQuery)) ||
-            (product.description &&
-              product.description.toLowerCase().includes(searchQuery));
-          const matchesCategory =
-            categoryFilter === 'all' || product.category === categoryFilter;
-          return matchesSearch && matchesCategory;
-        });
-      }
-
-      function clearFilters() {
-        document.getElementById('productSearchInput').value = '';
-        document.getElementById('categoryFilter').value = 'all';
-        filterProducts();
-      }
-
-      function updateFilterStatus(
-        filteredCount,
-        totalCount,
-        searchQuery,
-        categoryFilter
-      ) {
-        const statusElement = document.getElementById('filterStatus');
-        if (!statusElement) return;
-
-        let statusText = `Showing ${filteredCount} of ${totalCount} products`;
-
-        if (searchQuery || categoryFilter !== 'all') {
-          const filters = [];
-          if (searchQuery) filters.push(`search: "${searchQuery}"`);
-          if (categoryFilter !== 'all')
-            filters.push(`category: ${getCategoryLabel(categoryFilter)}`);
-          statusText += ` (filtered by ${filters.join(', ')})`;
-        }
-
-        statusElement.textContent = statusText;
-      }
-
-      // ========== PACKAGE CATEGORIES MANAGEMENT FUNCTIONS ==========
-      
-      // Declare packageCategories in the main script to be accessible by both files
-      if (typeof packageCategories === 'undefined') {
-        var packageCategories = [];
-      }
-      
-      async function loadPackageCategories() {
-        try {
-          const response = await fetch('api.php?action=get_package_categories');
-          packageCategories = await response.json();
-          console.log('Package categories loaded:', packageCategories);
-          renderPackageCategoryList();
-        } catch (error) {
-          console.error('Error loading package categories:', error);
-        }
-      }
-      
-      function renderPackageCategoryList() {
-        const container = document.getElementById('packageCategoryList');
-        if (!container) {
-          console.error('packageCategoryList container not found!');
-          return;
-        }
-        container.innerHTML =
-          '<table style="width: 100%; border-collapse: collapse; margin-top: 1rem;"></table>';
-        const table = container.querySelector('table');
-
-        if (packageCategories.length === 0) {
-          table.innerHTML =
-            '<tr><td colspan="3" style="text-align: center; padding: 1rem; border: 1px solid #ddd;">No package categories found. Add one below.</td></tr>';
-          return;
-        }
-
-        table.innerHTML = `
-                <thead>
-                    <tr style="background: #f8f9fa;">
-                        <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Category ID</th>
-                        <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Display Name</th>
-                        <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${packageCategories
-                  .map(
-                    (cat) => `
-                        <tr>
-                            <td style="padding: 0.75rem; border: 1px solid #ddd;">${cat.name}</td>
-                            <td style="padding: 0.75rem; border: 1px solid #ddd;">${cat.label}</td>
-                            <td style="padding: 0.75rem; border: 1px solid #ddd;">
-                                <button onclick="editPackageCategory(${cat.id}, '${cat.name}', '${cat.label}')" class="btn btn-secondary" style="padding: 0.3rem 0.6rem;">Edit</button>
-                                <button onclick="deletePackageCategory(${cat.id})" class="btn btn-danger" style="padding: 0.3rem 0.6rem;">Delete</button>
-                            </td>
-                        </tr>
-                    `
-                  )
-                  .join('')}
-                </tbody>
-            `;
-      }
-      
-      async function addPackageCategory() {
-        const nameInput = document.getElementById('newPackageCategoryName');
-        const labelInput = document.getElementById('newPackageCategoryLabel');
-        const name = nameInput.value.trim();
-        const label = labelInput.value.trim();
-
-        if (!name || !label) {
-          showToast('Both category ID and display name are required', 'error');
-          return;
-        }
-
-        try {
-          const response = await fetch('api.php?action=add_package_category', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, label }),
-          });
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Package category added successfully!');
-            nameInput.value = '';
-            labelInput.value = '';
-            loadPackageCategories();
-          } else {
-            showToast(
-              `Error adding package category: ${result.error || 'Unknown error'}`,
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error adding package category:', error);
-          showToast('Failed to add package category', 'error');
-        }
-      }
-      
-      function editPackageCategory(id, currentName, currentLabel) {
-        const newName = prompt('Enter new package category ID:', currentName);
-        if (newName === null) return;
-
-        const newLabel = prompt('Enter new display name:', currentLabel);
-        if (newLabel === null) return;
-
-        if (!newName.trim() || !newLabel.trim()) {
-          showToast('Category ID and name cannot be empty', 'error');
-          return;
-        }
-
-        updatePackageCategory(id, newName.trim(), newLabel.trim());
-      }
-      
-      async function updatePackageCategory(id, name, label) {
-        try {
-          const response = await fetch(
-            'api.php?action=update_package_category',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id, name, label }),
-            }
-          );
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Package category updated successfully!');
-            loadPackageCategories();
-          } else {
-            showToast(
-              `Error updating package category: ${result.error || 'Unknown error'}`,
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error updating package category:', error);
-          showToast('Failed to update package category', 'error');
-        }
-      }
-      
-      async function deletePackageCategory(id) {
-        if (
-          !confirm(
-            'Are you sure you want to delete this package category? This action cannot be undone and may affect existing packages.'
-          )
-        ) {
-          return;
-        }
-
-        try {
-          const response = await fetch(
-            `api.php?action=delete_package_category&id=${id}`,
-            {
-              method: 'POST',
-            }
-          );
-
-          const result = await response.json();
-          if (result.success) {
-            showToast('Package category deleted successfully!');
-            loadPackageCategories();
-          } else {
-            showToast(
-              `Error deleting package category: ${result.error || 'Unknown error'}`,
-              'error'
-            );
-          }
-        } catch (error) {
-          console.error('Error deleting package category:', error);
-          showToast('Failed to delete package category', 'error');
-        }
-      }
-      
-      // Initialize
-      document.addEventListener('DOMContentLoaded', function () {
-        // Add initial line item after a short delay to ensure settings are available
-        setTimeout(() => {
-          addLineItem();
-        }, 100);
-
-        // Enter key for login
-        document
-          .getElementById('passwordInput')
-          .addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-              login();
-            }
-          });
-      });
-    </script>
-    
-    <!-- Include Packages JavaScript -->
+    <!-- Include JavaScript -->
+    <script src="tailwind-app.js"></script>
     <script src="packages.js"></script>
   </body>
 </html>
