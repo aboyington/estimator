@@ -764,7 +764,323 @@ async function updateEstimateStatus(id, status) {
 
 // Product functions
 async function loadProductsServices() {
-  // Implementation here
+  try {
+    const response = await fetch('api.php?action=get_products_services');
+    allProducts = await response.json();
+    await loadProductCategories();
+    filterProducts();
+  } catch (error) {
+    console.error('Error loading products:', error);
+    showToast('Error loading products', 'error');
+  }
+}
+
+function filterProducts() {
+  const searchTerm = document.getElementById('productSearchInput')?.value.toLowerCase() || '';
+  const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+  
+  let filtered = allProducts.filter(product => {
+    const matchesSearch = !searchTerm || 
+      product.name.toLowerCase().includes(searchTerm) ||
+      product.description.toLowerCase().includes(searchTerm) ||
+      product.sku.toLowerCase().includes(searchTerm);
+    
+    const matchesCategory = !categoryFilter || 
+      (product.category && product.category.toLowerCase() === categoryFilter.toLowerCase());
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  // Sort products
+  filtered.sort((a, b) => {
+    const aVal = a[productSort.column] || '';
+    const bVal = b[productSort.column] || '';
+    
+    if (typeof aVal === 'string') {
+      return productSort.direction === 'asc' 
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    } else {
+      return productSort.direction === 'asc' 
+        ? aVal - bVal
+        : bVal - aVal;
+    }
+  });
+
+  renderProducts(filtered);
+}
+
+function clearFilters() {
+  document.getElementById('productSearchInput').value = '';
+  document.getElementById('categoryFilter').value = '';
+  filterProducts();
+}
+
+function renderProducts(products) {
+  const container = document.getElementById('productsList');
+  
+  // Update record count display
+  updateProductCount(products.length);
+  
+  if (!products.length) {
+    container.innerHTML = '<div class="text-center py-8 text-gray-500">No products found</div>';
+    return;
+  }
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProducts = products.slice(startIndex, endIndex);
+
+  container.innerHTML = `
+    <table class="w-full border-collapse border border-gray-300">
+      <thead>
+        <tr class="bg-gray-50">
+          <th class="border border-gray-300 px-4 py-3 text-left">
+            <input type="checkbox" id="selectAllProducts" onchange="toggleSelectAllProducts()" class="rounded">
+          </th>
+          <th class="border border-gray-300 px-4 py-3 text-left cursor-pointer" onclick="sortProducts('sku')">
+            SKU
+            ${productSort.column === 'sku' ? (productSort.direction === 'asc' ? '↑' : '↓') : ''}
+          </th>
+          <th class="border border-gray-300 px-4 py-3 text-left cursor-pointer" onclick="sortProducts('name')">
+            Name
+            ${productSort.column === 'name' ? (productSort.direction === 'asc' ? '↑' : '↓') : ''}
+          </th>
+          <th class="border border-gray-300 px-4 py-3 text-left cursor-pointer" onclick="sortProducts('category')">
+            Category
+          </th>
+          <th class="border border-gray-300 px-4 py-3 text-left cursor-pointer" onclick="sortProducts('unit_cost')">
+            Unit Cost
+            ${productSort.column === 'unit_cost' ? (productSort.direction === 'asc' ? '↑' : '↓') : ''}
+          </th>
+          <th class="border border-gray-300 px-4 py-3 text-left">
+            Description
+          </th>
+          <th class="border border-gray-300 px-4 py-3 text-center">
+            Action
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${paginatedProducts.map(product => `
+          <tr class="hover:bg-gray-50">
+            <td class="border border-gray-300 px-4 py-3">
+              <input type="checkbox" class="product-checkbox rounded" value="${product.id}" onchange="updateBulkDeleteButton()">
+            </td>
+            <td class="border border-gray-300 px-4 py-3 font-mono text-sm">
+              ${product.sku}
+            </td>
+            <td class="border border-gray-300 px-4 py-3 font-medium">
+              ${product.name}
+            </td>
+            <td class="border border-gray-300 px-4 py-3">
+              ${product.category || 'Uncategorized'}
+            </td>
+            <td class="border border-gray-300 px-4 py-3 font-mono">
+              $${parseFloat(product.unit_cost || 0).toFixed(2)}
+            </td>
+            <td class="border border-gray-300 px-4 py-3">
+              <div class="description-cell">
+                <span class="short-desc">${truncateText(product.description || '', 50)}</span>
+                <span class="full-desc hidden">${product.description || ''}</span>
+                ${(product.description || '').length > 50 ? 
+                  '<button onclick="toggleDescription(this)" class="text-udora-600 hover:text-udora-800 text-xs ml-2">Show More</button>' : 
+                  ''
+                }
+              </div>
+            </td>
+            <td class="border border-gray-300 px-4 py-3">
+              <div class="flex flex-col space-y-1">
+                <div class="flex space-x-1">
+                  <button onclick="editProduct(${product.id})" 
+                          class="bg-gray-600 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded">
+                    Edit
+                  </button>
+                  <button onclick="deleteProduct(${product.id})" 
+                          class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded">
+                    Delete
+                  </button>
+                </div>
+                <button onclick="useInEstimate(${product.id})" 
+                        class="bg-udora-600 hover:bg-udora-700 text-white text-xs px-2 py-1 rounded w-full">
+                  Use in Estimate
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  // Update pagination
+  updateProductPagination(products.length);
+}
+
+function truncateText(text, maxLength) {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+function toggleDescription(button) {
+  const cell = button.parentElement;
+  const shortDesc = cell.querySelector('.short-desc');
+  const fullDesc = cell.querySelector('.full-desc');
+  
+  if (fullDesc.classList.contains('hidden')) {
+    shortDesc.classList.add('hidden');
+    fullDesc.classList.remove('hidden');
+    button.textContent = 'Show Less';
+  } else {
+    shortDesc.classList.remove('hidden');
+    fullDesc.classList.add('hidden');
+    button.textContent = 'Show More';
+  }
+}
+
+function toggleSelectAllProducts() {
+  const selectAll = document.getElementById('selectAllProducts');
+  const checkboxes = document.querySelectorAll('.product-checkbox');
+  
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAll.checked;
+  });
+  
+  updateBulkDeleteButton();
+}
+
+function updateBulkDeleteButton() {
+  const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+  const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+  
+  if (checkboxes.length > 0) {
+    bulkDeleteBtn.classList.remove('hidden');
+  } else {
+    bulkDeleteBtn.classList.add('hidden');
+  }
+}
+
+function deleteSelectedProducts() {
+  const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+  const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+  
+  if (selectedIds.length === 0) {
+    showToast('No products selected', 'error');
+    return;
+  }
+  
+  if (!confirm(`Are you sure you want to delete ${selectedIds.length} product(s)?`)) {
+    return;
+  }
+  
+  // Delete each selected product
+  Promise.all(selectedIds.map(id => deleteProductById(id)))
+    .then(() => {
+      showToast(`Successfully deleted ${selectedIds.length} product(s)!`);
+      loadProductsServices();
+    })
+    .catch(error => {
+      console.error('Error deleting products:', error);
+      showToast('Error deleting some products', 'error');
+    });
+}
+
+async function deleteProductById(id) {
+  const response = await fetch(`api.php?action=delete_product&id=${id}`, {
+    method: 'DELETE'
+  });
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || 'Unknown error');
+  }
+  return result;
+}
+
+function getCategoryName(categoryId) {
+  const category = productCategories.find(cat => cat.id == categoryId);
+  return category ? category.name : 'Uncategorized';
+}
+
+function updateProductPagination(totalProducts) {
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
+  const paginationContainer = document.getElementById('productPagination');
+  
+  if (totalPages <= 1) {
+    paginationContainer.innerHTML = '';
+    return;
+  }
+
+  let paginationHTML = '<div class="flex justify-center items-center space-x-2 mt-6">';
+  
+  // Previous button
+  paginationHTML += `
+    <button onclick="changeProductPage(${currentPage - 1})" 
+            ${currentPage === 1 ? 'disabled' : ''}
+            class="px-3 py-1 border rounded ${currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'}">Previous</button>
+  `;
+  
+  // Page numbers
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === currentPage) {
+      paginationHTML += `<button class="px-3 py-1 bg-udora-600 text-white rounded">${i}</button>`;
+    } else {
+      paginationHTML += `<button onclick="changeProductPage(${i})" class="px-3 py-1 border bg-white text-gray-700 rounded hover:bg-gray-50">${i}</button>`;
+    }
+  }
+  
+  // Next button
+  paginationHTML += `
+    <button onclick="changeProductPage(${currentPage + 1})" 
+            ${currentPage === totalPages ? 'disabled' : ''}
+            class="px-3 py-1 border rounded ${currentPage === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'}">Next</button>
+  `;
+  
+  paginationHTML += '</div>';
+  paginationContainer.innerHTML = paginationHTML;
+}
+
+function changeProductPage(page) {
+  const totalPages = Math.ceil(allProducts.length / itemsPerPage);
+  if (page >= 1 && page <= totalPages) {
+    currentPage = page;
+    filterProducts();
+  }
+}
+
+function sortProducts(column) {
+  if (productSort.column === column) {
+    productSort.direction = productSort.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    productSort.column = column;
+    productSort.direction = 'asc';
+  }
+  filterProducts();
+}
+
+// Update product count display
+function updateProductCount(filteredCount) {
+  const countDisplay = document.getElementById('productCount');
+  if (!countDisplay) return;
+  
+  const searchTerm = document.getElementById('productSearchInput')?.value || '';
+  const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+  
+  let countText = `Showing ${filteredCount} of ${allProducts.length} products`;
+  
+  // Add filter information
+  const activeFilters = [];
+  if (searchTerm.trim()) {
+    activeFilters.push(`search: "${searchTerm}"`);
+  }
+  if (categoryFilter) {
+    activeFilters.push(`category: ${categoryFilter}`);
+  }
+  
+  if (activeFilters.length > 0) {
+    countText += ` (filtered by ${activeFilters.join(', ')})`;
+  }
+  
+  countDisplay.textContent = countText;
 }
 
 // Package functions
@@ -772,9 +1088,137 @@ async function loadPackages() {
   // Implementation here
 }
 
+// Product CRUD operations
+function showAddProductForm() {
+  editingProductId = null;
+  document.getElementById('productModalTitle').textContent = 'Add New Product';
+  document.getElementById('productForm').reset();
+  loadProductCategories(); // Ensure categories are loaded
+  document.getElementById('productModal').classList.remove('hidden');
+}
+
+async function editProduct(id) {
+  editingProductId = id;
+  const product = allProducts.find(p => p.id === id);
+  if (!product) return;
+
+  document.getElementById('productModalTitle').textContent = 'Edit Product';
+  document.getElementById('productName').value = product.name;
+  document.getElementById('productSku').value = product.sku;
+  document.getElementById('productDescription').value = product.description || '';
+  document.getElementById('productCost').value = product.unit_cost;
+  document.getElementById('productCategoryId').value = product.category || '';
+  document.getElementById('productModal').classList.remove('hidden');
+}
+
+async function saveProduct() {
+  const formData = {
+    name: document.getElementById('productName').value,
+    sku: document.getElementById('productSku').value,
+    description: document.getElementById('productDescription').value,
+    unit_cost: parseFloat(document.getElementById('productCost').value) || 0,
+    category: document.getElementById('productCategoryId').value || null
+  };
+
+  if (!formData.name || !formData.sku) {
+    showToast('Please fill in name and SKU', 'error');
+    return;
+  }
+
+  try {
+    const action = editingProductId ? 'update_product' : 'add_product';
+    const url = `api.php?action=${action}${editingProductId ? `&id=${editingProductId}` : ''}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast(`Product ${editingProductId ? 'updated' : 'added'} successfully!`);
+      closeProductModal();
+      loadProductsServices();
+    } else {
+      showToast('Error saving product: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error saving product:', error);
+    showToast('Error saving product', 'error');
+  }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Are you sure you want to delete this product?')) return;
+
+  try {
+    const response = await fetch(`api.php?action=delete_product&id=${id}`, {
+      method: 'DELETE'
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast('Product deleted successfully!');
+      loadProductsServices();
+    } else {
+      showToast('Error deleting product: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    showToast('Error deleting product', 'error');
+  }
+}
+
+function closeProductModal() {
+  document.getElementById('productModal').classList.add('hidden');
+  editingProductId = null;
+}
+
 // Category management
 async function loadProductCategories() {
-  // Implementation here
+  try {
+    const response = await fetch('api.php?action=get_product_categories');
+    productCategories = await response.json();
+    
+    // Extract unique categories from products for the filter dropdown
+    const uniqueCategories = [...new Set(allProducts
+      .map(product => product.category)
+      .filter(category => category && category.trim() !== '')
+    )].sort();
+    
+    // Update category dropdowns
+    const filterSelect = document.getElementById('categoryFilter');
+    const formSelect = document.getElementById('productCategoryId');
+    
+    if (filterSelect) {
+      filterSelect.innerHTML = '<option value="">All Categories</option>' +
+        uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    }
+    
+    if (formSelect) {
+      // For the product form, use the unique categories from products since the API might not return proper categories
+      const categoryOptions = uniqueCategories.length > 0 
+        ? uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('')
+        : '<option value="Hardware">Hardware</option><option value="Labor">Labor</option><option value="Parts/Materials">Parts/Materials</option><option value="Services">Services</option><option value="Installation">Installation</option>';
+      
+      formSelect.innerHTML = '<option value="">Select Category</option>' + categoryOptions;
+    }
+  } catch (error) {
+    console.error('Error loading product categories:', error);
+    // Fallback to default categories if API fails
+    const formSelect = document.getElementById('productCategoryId');
+    if (formSelect) {
+      formSelect.innerHTML = `
+        <option value="">Select Category</option>
+        <option value="Hardware">Hardware</option>
+        <option value="Labor">Labor</option>
+        <option value="Parts/Materials">Parts/Materials</option>
+        <option value="Services">Services</option>
+        <option value="Installation">Installation</option>
+      `;
+    }
+  }
 }
 
 async function loadPackageCategories() {
@@ -791,7 +1235,41 @@ function exportEstimatesCSV() {
 }
 
 function exportProductsCSV() {
-  // Implementation here
+  if (!allProducts.length) {
+    showToast('No products to export', 'error');
+    return;
+  }
+
+  const csvHeaders = ['Name', 'SKU', 'Description', 'Cost', 'Price', 'Stock Quantity', 'Category'];
+  const csvData = [csvHeaders];
+
+  allProducts.forEach(product => {
+    csvData.push([
+      product.name,
+      product.sku,
+      product.description || '',
+      product.cost,
+      product.price,
+      product.stock_quantity || 0,
+      getCategoryName(product.category_id)
+    ]);
+  });
+
+  const csvContent = csvData.map(row => 
+    row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `products_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showToast('Products exported successfully!');
 }
 
 function exportPackagesCSV() {
@@ -804,11 +1282,113 @@ function showEstimateImportForm() {
 }
 
 function showImportForm() {
-  // Implementation here
+  document.getElementById('productImportModal').classList.remove('hidden');
+}
+
+function closeImportModal() {
+  document.getElementById('productImportModal').classList.add('hidden');
+  document.getElementById('productImportFile').value = '';
+}
+
+async function importProducts() {
+  const fileInput = document.getElementById('productImportFile');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    showToast('Please select a CSV file', 'error');
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    showToast('Please select a CSV file', 'error');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('action', 'import_products');
+
+  try {
+    const response = await fetch('api.php', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast(`Successfully imported ${result.count} products!`);
+      closeImportModal();
+      loadProductsServices();
+    } else {
+      showToast('Import failed: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error importing products:', error);
+    showToast('Error importing products', 'error');
+  }
 }
 
 function showPackageImportForm() {
   // Implementation here
+}
+
+// Use in Estimate functionality
+function useInEstimate(productId) {
+  const product = allProducts.find(p => p.id === productId);
+  if (!product) {
+    showToast('Product not found', 'error');
+    return;
+  }
+
+  // Switch to estimate section
+  showSection('estimate');
+
+  // Add a slight delay to ensure the section loads before adding the line item
+  setTimeout(() => {
+    // Add a new line item with product data
+    const container = document.getElementById('lineItemsList');
+    const itemId = `lineItem${lineItemCounter++}`;
+
+    const lineItem = document.createElement('div');
+    lineItem.className = 'line-item';
+    lineItem.id = itemId;
+    lineItem.innerHTML = `
+      <input type="text" placeholder="Description" onchange="calculateTotals()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" value="${product.name}">
+      <input type="number" min="1" value="1" onchange="calculateTotals()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+      <input type="number" step="0.01" min="0" placeholder="0.00" onchange="calculateTotals()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" value="${parseFloat(product.unit_cost || 0).toFixed(2)}">
+      <select onchange="updateMarkup('${itemId}'); calculateTotals()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+        <option value="hardware" ${getCategoryType(product.category_id) === 'hardware' ? 'selected' : ''}>Hardware</option>
+        <option value="parts_materials" ${getCategoryType(product.category_id) === 'parts_materials' ? 'selected' : ''}>Parts/Materials</option>
+        <option value="labor" ${getCategoryType(product.category_id) === 'labor' ? 'selected' : ''}>Labor</option>
+      </select>
+      <input type="number" step="0.01" min="0" readonly class="w-full px-2 py-1 border border-gray-300 rounded text-sm bg-gray-100">
+      <span class="line-total text-sm font-semibold">$0.00</span>
+      <button type="button" onclick="removeLineItem('${itemId}')" class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded">Remove</button>
+    `;
+
+    container.appendChild(lineItem);
+    updateMarkup(itemId);
+    calculateTotals();
+
+    // Show success message
+    showToast(`${product.name} added to estimate`);
+  }, 100);
+}
+
+// Helper function to determine category type based on product category
+function getCategoryType(categoryId) {
+  const category = productCategories.find(cat => cat.id == categoryId);
+  if (!category) return 'hardware';
+  
+  const categoryName = category.name.toLowerCase();
+  
+  if (categoryName.includes('labor') || categoryName.includes('service')) {
+    return 'labor';
+  } else if (categoryName.includes('hardware') || categoryName.includes('equipment') || categoryName.includes('device')) {
+    return 'hardware';
+  } else {
+    return 'parts_materials';
+  }
 }
 
 // Initialize

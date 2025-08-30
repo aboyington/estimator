@@ -800,6 +800,57 @@ try {
             echo json_encode(['success' => true, 'package_id' => $newPackageId, 'name' => $newName]);
             break;
 
+        case 'add_product':
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            $stmt = $db->prepare("INSERT INTO products_services (sku, name, description, category, unit_cost) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $data['sku'] ?? '',
+                $data['name'],
+                $data['description'] ?? '',
+                $data['category'],
+                $data['unit_cost'] ?? 0
+            ]);
+            
+            echo json_encode(['success' => true, 'id' => $db->lastInsertId()]);
+            break;
+
+        case 'update_product':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $id = $_GET['id'] ?? 0;
+            
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'No product ID provided']);
+                break;
+            }
+            
+            $stmt = $db->prepare("UPDATE products_services SET sku = ?, name = ?, description = ?, category = ?, unit_cost = ? WHERE id = ?");
+            $stmt->execute([
+                $data['sku'] ?? '',
+                $data['name'],
+                $data['description'] ?? '',
+                $data['category'],
+                $data['unit_cost'] ?? 0,
+                $id
+            ]);
+            
+            echo json_encode(['success' => true]);
+            break;
+
+        case 'delete_product':
+            $id = $_GET['id'] ?? $_POST['id'] ?? 0;
+            
+            if (!$id) {
+                echo json_encode(['success' => false, 'error' => 'No product ID provided']);
+                break;
+            }
+            
+            $stmt = $db->prepare("DELETE FROM products_services WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            echo json_encode(['success' => true]);
+            break;
+
         default:
             echo json_encode(['error' => 'Invalid action']);
     }
