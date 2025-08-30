@@ -1,15 +1,26 @@
 // packages.js - Packages Management Functions for Estimator
 
 // Global variables for packages
-let allPackages = [];
+if (typeof allPackages === 'undefined') {
+  var allPackages = [];
+}
 // Use global packageCategories from main script if available
 if (typeof packageCategories === 'undefined') {
   var packageCategories = [];
 }
-let editingPackageId = null;
-let currentPackagePage = 1;
-const packagesPerPage = 10;
-let packageSort = { column: 'name', direction: 'asc' };
+// Use global variables from main script if available
+if (typeof editingPackageId === 'undefined') {
+  var editingPackageId = null;
+}
+if (typeof currentPackagePage === 'undefined') {
+  var currentPackagePage = 1;
+}
+if (typeof packagesPerPage === 'undefined') {
+  var packagesPerPage = 10;
+}
+if (typeof packageSort === 'undefined') {
+  var packageSort = { column: 'name', direction: 'asc' };
+}
 
 // ===== PACKAGES MANAGEMENT FUNCTIONS =====
 
@@ -116,7 +127,10 @@ function cancelAddPackage() {
     document.getElementById('addPackageFormContainer').style.display = 'none';
 }
 
-let packageLineItemCounter = 0;
+// Use global packageLineItemCounter from main script if available
+if (typeof packageLineItemCounter === 'undefined') {
+  var packageLineItemCounter = 0;
+}
 
 function addPackageLineItem() {
     const container = document.getElementById('packageLineItemsList');
