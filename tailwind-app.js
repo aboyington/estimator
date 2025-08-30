@@ -8,13 +8,8 @@ let editingProductId = null;
 let allProducts = [];
 let currentPage = 1;
 const itemsPerPage = 20;
-let allPackages = [];
-let packageCategories = [];
-let editingPackageId = null;
-let currentPackagePage = 1;
-const packagesPerPage = 10;
-let packageSort = { column: 'name', direction: 'asc' };
-let packageLineItemCounter = 0;
+// Note: allPackages, packageCategories, editingPackageId, currentPackagePage, packagesPerPage, packageSort, packageLineItemCounter
+// are declared in packages.js to avoid conflicts
 
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');

@@ -1,53 +1,38 @@
-# White-Label Estimator - Technology Stack
+# Technology Stack
 
-## Core Technologies
+## Frontend
+- **HTML5**: Semantic markup with modern web standards
+- **Tailwind CSS v4.1.12**: Utility-first CSS framework with CSS-first configuration
+- **Vanilla JavaScript**: No frameworks, pure JavaScript for maximum performance
+- **CSS Variables**: Modern CSS custom properties for theming
 
-### Frontend
-- **HTML5**: Semantic markup with responsive structure
-- **CSS3**: Professional styling with mobile responsiveness
-  - Custom CSS with Udora Safety blue theme (#1e3c72)
-  - Grid-based responsive layout
-  - Professional typography (Segoe UI font family)
-- **JavaScript (ES6+)**: Vanilla JavaScript (no frameworks)
-  - Dynamic functionality and real-time calculations
-  - API communication with fetch() calls
-  - Client-side filtering and search
-  - Form validation and UI state management
-
-### Backend
-- **PHP 7.4+**: Server-side processing and API endpoints
-  - RESTful API design with action-based routing
-  - Session-based authentication
-  - PDO for database operations
-  - JSON API responses
-
-### Database
+## Backend
+- **PHP 7.4+**: Server-side scripting (api.php for data handling)
 - **SQLite**: Lightweight database for data persistence
-  - Local storage (no cloud dependencies)
-  - Tables: settings, estimates, line_items, products_services, product_categories
-  - Foreign key relationships with CASCADE delete
-  - DECIMAL precision for financial calculations
+- **Apache**: Web server (MAMP for local development)
 
-## Architecture
-- **Single-Page Application (SPA)**: All functionality in one HTML file
-- **API-First Design**: Clean separation between frontend and backend
-- **Session Security**: Password protection with server-side session management
-- **Local Data Storage**: Complete data privacy with on-premises SQLite database
+## Build Tools
+- **@tailwindcss/cli v4.1.12**: Official Tailwind CLI for CSS compilation
+- **npm**: Package management and build scripts
+- **Node.js**: Required for build tools (not for runtime)
 
-## Development Tools
-- **Version Control**: Git with GitHub integration
-- **Version Management**: Custom shell script (version.sh) with npm integration
-- **Package Management**: Basic package.json for version tracking
-- **Database Setup**: Automated setup.php script for initialization
+## Development Environment
+- **MAMP**: Local Apache/PHP/MySQL stack running on port 80
+- **macOS**: Darwin development environment
+- **Modern Browsers**: Chrome 111+, Safari 16.4+, Firefox 128+
 
-## File Structure
+## Key Dependencies
+```json
+{
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.12",
+    "tailwindcss": "^4.1.12"
+  }
+}
 ```
-estimator/
-├── index.html          # Main SPA interface
-├── api.php            # Backend API with all endpoints
-├── setup.php          # Database initialization
-├── package.json       # Project metadata
-├── version.sh         # Version management script
-├── docs/              # Documentation
-└── .serena/           # Serena AI agent configuration
-```
+
+## Architecture Pattern
+- **SPA (Single Page Application)**: Tab-based navigation with JavaScript
+- **Client-side State Management**: localStorage for data persistence
+- **Component-based CSS**: Custom utility classes with Tailwind
+- **Progressive Enhancement**: Works without JavaScript for core functionality
