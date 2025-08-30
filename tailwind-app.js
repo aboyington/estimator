@@ -1436,8 +1436,68 @@ async function addCategory() {
 }
 
 // Export functions
-function exportEstimatesCSV() {
-  // Implementation here
+async function exportEstimatesCSV() {
+  try {
+    const response = await fetch('api.php?action=get_detailed_estimates');
+    const estimates = await response.json();
+    
+    if (!estimates.length) {
+      showToast('No estimates to export', 'error');
+      return;
+    }
+
+    const csvHeaders = [
+      'Estimate Number', 'Client Name', 'Client Email', 'Client Phone', 'Project Address',
+      'Project Type', 'Status', 'Subtotal', 'Tax Amount', 'Total Amount', 
+      'Notes', 'Created Date', 'Line Items'
+    ];
+    const csvData = [csvHeaders];
+
+    estimates.forEach(estimate => {
+      // Format line items as a string
+      let lineItemsText = '';
+      if (estimate.line_items && estimate.line_items.length > 0) {
+        lineItemsText = estimate.line_items.map(item => 
+          `"${item.description}" (Qty: ${item.quantity}, Cost: $${parseFloat(item.unit_cost).toFixed(2)}, Category: ${item.category}, Markup: ${item.markup_percent}%, Total: $${parseFloat(item.line_total).toFixed(2)})`
+        ).join('; ');
+      }
+
+      csvData.push([
+        estimate.estimate_number || '',
+        estimate.client_name || '',
+        estimate.client_email || '',
+        estimate.client_phone || '',
+        estimate.project_address || '',
+        estimate.project_type || 'residential',
+        estimate.status || 'draft',
+        parseFloat(estimate.subtotal || 0).toFixed(2),
+        parseFloat(estimate.tax_amount || 0).toFixed(2),
+        parseFloat(estimate.total_amount || 0).toFixed(2),
+        estimate.notes || '',
+        estimate.created_at || '',
+        lineItemsText
+      ]);
+    });
+
+    const csvContent = csvData.map(row => 
+      row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `estimates_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast(`Successfully exported ${estimates.length} estimates!`);
+  } catch (error) {
+    console.error('Error exporting estimates:', error);
+    showToast('Error exporting estimates', 'error');
+  }
 }
 
 function exportProductsCSV() {
@@ -1483,7 +1543,114 @@ function exportPackagesCSV() {
 
 // Import functions
 function showEstimateImportForm() {
-  // Implementation here
+  document.getElementById('estimateImportModal').classList.remove('hidden');
+}
+
+function closeEstimateImportModal() {
+  document.getElementById('estimateImportModal').classList.add('hidden');
+  document.getElementById('estimateImportFile').value = '';
+}
+
+async function importEstimates() {
+  const fileInput = document.getElementById('estimateImportFile');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    showToast('Please select a CSV file', 'error');
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    showToast('Please select a CSV file', 'error');
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const lines = text.trim().split('\n');
+    
+    if (lines.length < 2) {
+      showToast('CSV file must have at least a header row and one data row', 'error');
+      return;
+    }
+
+    // Parse CSV headers
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+    
+    // Check for required columns
+    const requiredColumns = ['client name', 'total amount'];
+    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+    
+    if (missingColumns.length > 0) {
+      showToast(`Missing required columns: ${missingColumns.join(', ')}`, 'error');
+      return;
+    }
+
+    // Parse data rows
+    const estimates = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+      
+      if (values.length !== headers.length) {
+        showToast(`Row ${i + 1}: Column count mismatch`, 'error');
+        return;
+      }
+      
+      const estimate = {};
+      headers.forEach((header, index) => {
+        estimate[header] = values[index];
+      });
+      
+      // Map to expected format
+      const formattedEstimate = {
+        client_name: estimate['client name'] || '',
+        client_email: estimate['client email'] || '',
+        client_phone: estimate['client phone'] || '',
+        project_address: estimate['project address'] || '',
+        project_type: estimate['project type'] || 'residential',
+        status: estimate['status'] || 'draft',
+        subtotal: parseFloat(estimate['subtotal'] || estimate['total amount'] || 0),
+        tax_amount: parseFloat(estimate['tax amount'] || 0),
+        total_amount: parseFloat(estimate['total amount'] || 0),
+        notes: estimate['notes'] || ''
+      };
+      
+      // Validate required fields
+      if (!formattedEstimate.client_name || formattedEstimate.total_amount <= 0) {
+        showToast(`Row ${i + 1}: Client name and valid total amount are required`, 'error');
+        return;
+      }
+      
+      estimates.push(formattedEstimate);
+    }
+
+    if (estimates.length === 0) {
+      showToast('No valid estimates found in CSV', 'error');
+      return;
+    }
+
+    // Send to API
+    const response = await fetch('api.php?action=import_estimates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estimates: estimates })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast(`Successfully imported ${result.imported} estimates!`);
+      closeEstimateImportModal();
+      loadEstimateHistory();
+    } else {
+      showToast('Import failed: ' + (result.error || 'Unknown error'), 'error');
+      if (result.errors && result.errors.length > 0) {
+        console.log('Import errors:', result.errors);
+      }
+    }
+  } catch (error) {
+    console.error('Error importing estimates:', error);
+    showToast('Error parsing CSV file', 'error');
+  }
 }
 
 function showImportForm() {

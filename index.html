@@ -941,6 +941,43 @@
       </div>
     </div>
 
+    <!-- Estimate Import Modal -->
+    <div id="estimateImportModal" class="hidden fixed inset-0 bg-black/80 z-2000">
+      <div class="bg-white mx-auto my-[10%] w-[90%] max-w-[600px] rounded-card overflow-hidden">
+        <div class="p-4 bg-udora-600 text-white flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Import Estimates</h3>
+          <button onclick="closeEstimateImportModal()" class="text-white text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+              <input type="file" id="estimateImportFile" accept=".csv" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-udora-500 focus:border-transparent" />
+            </div>
+            <div class="text-sm text-gray-600">
+              <p class="mb-2"><strong>Required CSV columns:</strong></p>
+              <ul class="list-disc ml-6 mb-3 text-xs">
+                <li>Client Name</li>
+                <li>Project Type (residential/commercial)</li>
+                <li>Total Amount</li>
+              </ul>
+              <p class="mb-2"><strong>Optional columns:</strong></p>
+              <ul class="list-disc ml-6 mb-3 text-xs">
+                <li>Client Email, Client Phone, Project Address</li>
+                <li>Subtotal, Tax Amount</li>
+                <li>Notes, Status (draft/sent/approved)</li>
+              </ul>
+              <p class="text-xs text-gray-500">First row should contain column headers. Line items not supported in bulk import.</p>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" onclick="closeEstimateImportModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">Cancel</button>
+              <button type="button" onclick="importEstimates()" class="bg-udora-600 hover:bg-udora-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">Import</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Include JavaScript -->
     <script src="tailwind-app.js?v=2.1"></script>
     <script src="packages.js?v=2.1"></script>
