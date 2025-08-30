@@ -136,6 +136,7 @@ function showToast(message, type = 'success') {
 
 // Global variables for current user
 let currentUser = null;
+let userDropdownOpen = false;
 
 // Authentication
 function showLoginForm() {
@@ -205,6 +206,7 @@ async function login() {
       currentUser = result.user;
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
+      updateUserDisplay();
       loadSettings();
       loadEstimateHistory();
       showToast(`Welcome back, ${currentUser.first_name || currentUser.username}!`);
@@ -263,6 +265,7 @@ async function register() {
       currentUser = result.user;
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
+      updateUserDisplay();
       loadSettings();
       loadEstimateHistory();
       showToast(`Welcome to Udora Safety Estimator, ${currentUser.first_name || currentUser.username}!`);
@@ -288,6 +291,7 @@ async function checkAuth() {
       currentUser = result.user;
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
+      updateUserDisplay();
       loadSettings();
       loadEstimateHistory();
       return true;
@@ -2326,6 +2330,174 @@ function getCategoryType(categoryId) {
     return 'hardware';
   } else {
     return 'parts_materials';
+  }
+}
+
+// User Profile Dropdown Functions
+function toggleUserDropdown() {
+  const dropdown = document.getElementById('userDropdown');
+  userDropdownOpen = !userDropdownOpen;
+  
+  if (userDropdownOpen) {
+    dropdown.classList.remove('hidden');
+    // Close dropdown when clicking outside
+    document.addEventListener('click', closeUserDropdownOnOutsideClick);
+  } else {
+    dropdown.classList.add('hidden');
+    document.removeEventListener('click', closeUserDropdownOnOutsideClick);
+  }
+}
+
+function closeUserDropdown() {
+  const dropdown = document.getElementById('userDropdown');
+  dropdown.classList.add('hidden');
+  userDropdownOpen = false;
+  document.removeEventListener('click', closeUserDropdownOnOutsideClick);
+}
+
+function closeUserDropdownOnOutsideClick(event) {
+  const dropdown = document.getElementById('userDropdown');
+  const button = document.getElementById('user-menu-button');
+  
+  if (!dropdown.contains(event.target) && !button.contains(event.target)) {
+    closeUserDropdown();
+  }
+}
+
+// User Profile Functions
+function showUserProfile() {
+  if (!currentUser) {
+    showToast('User data not available', 'error');
+    return;
+  }
+  
+  // Populate profile form with current user data
+  document.getElementById('profileFirstName').value = currentUser.first_name || '';
+  document.getElementById('profileLastName').value = currentUser.last_name || '';
+  document.getElementById('profileUsername').value = currentUser.username || '';
+  document.getElementById('profileEmail').value = currentUser.email || '';
+  
+  // Clear password fields
+  document.getElementById('currentPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmNewPassword').value = '';
+  
+  // Show modal
+  document.getElementById('userProfileModal').classList.remove('hidden');
+}
+
+function closeUserProfileModal() {
+  document.getElementById('userProfileModal').classList.add('hidden');
+}
+
+async function saveUserProfile() {
+  const firstName = document.getElementById('profileFirstName').value.trim();
+  const lastName = document.getElementById('profileLastName').value.trim();
+  const email = document.getElementById('profileEmail').value.trim();
+  
+  if (!email) {
+    showToast('Email is required', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch('api.php?action=update_profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+        email: email
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Update current user data
+      currentUser.first_name = firstName;
+      currentUser.last_name = lastName;
+      currentUser.email = email;
+      
+      // Update user initials display
+      updateUserDisplay();
+      
+      showToast('Profile updated successfully!');
+    } else {
+      showToast('Error updating profile: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    showToast('Error updating profile', 'error');
+  }
+}
+
+async function changeUserPassword() {
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+  
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    showToast('All password fields are required', 'error');
+    return;
+  }
+  
+  if (newPassword !== confirmNewPassword) {
+    showToast('New passwords do not match', 'error');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showToast('New password must be at least 6 characters long', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch('api.php?action=change_password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Clear password fields
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmNewPassword').value = '';
+      
+      showToast('Password changed successfully!');
+    } else {
+      showToast('Error changing password: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error changing password:', error);
+    showToast('Error changing password', 'error');
+  }
+}
+
+// Update user display in header
+function updateUserDisplay() {
+  if (currentUser) {
+    const userInitials = document.getElementById('userInitials');
+    
+    // Generate initials from first and last name, or use username if names not available
+    let initials = 'U';
+    if (currentUser.first_name && currentUser.last_name) {
+      initials = (currentUser.first_name.charAt(0) + currentUser.last_name.charAt(0)).toUpperCase();
+    } else if (currentUser.first_name) {
+      initials = currentUser.first_name.charAt(0).toUpperCase();
+    } else if (currentUser.username) {
+      initials = currentUser.username.charAt(0).toUpperCase();
+    }
+    
+    if (userInitials) {
+      userInitials.textContent = initials;
+    }
   }
 }
 
