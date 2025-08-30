@@ -745,21 +745,227 @@ async function loadEstimateHistory() {
   }
 }
 
-// Placeholder functions for remaining functionality
+// Estimate History Functions
 async function viewEstimate(id) {
-  // Implementation here
+  try {
+    const response = await fetch(`api.php?action=get_estimate&id=${id}`);
+    const estimate = await response.json();
+    
+    if (estimate) {
+      // Generate preview using existing preview function
+      generateEstimatePreview(estimate);
+      document.getElementById('previewModal').classList.remove('hidden');
+    } else {
+      showToast('Error loading estimate', 'error');
+    }
+  } catch (error) {
+    console.error('Error viewing estimate:', error);
+    showToast('Error loading estimate', 'error');
+  }
 }
 
 async function editEstimate(id) {
-  // Implementation here
+  try {
+    const response = await fetch(`api.php?action=get_estimate&id=${id}`);
+    const estimate = await response.json();
+    
+    if (estimate) {
+      // Switch to estimate section
+      showSection('estimate');
+      
+      // Populate the form with estimate data
+      document.getElementById('clientName').value = estimate.client_name || '';
+      document.getElementById('clientEmail').value = estimate.client_email || '';
+      document.getElementById('clientPhone').value = estimate.client_phone || '';
+      document.getElementById('projectAddress').value = estimate.project_address || '';
+      document.getElementById('projectType').value = estimate.project_type || 'residential';
+      document.getElementById('estimateNotes').value = estimate.notes || '';
+      document.getElementById('estimateStatus').value = estimate.status || 'draft';
+      
+      // Clear existing line items
+      document.getElementById('lineItemsList').innerHTML = '';
+      
+      // Add line items
+      if (estimate.line_items && estimate.line_items.length > 0) {
+        estimate.line_items.forEach(item => {
+          addLineItem();
+          const lineItems = document.querySelectorAll('.line-item:not(.line-item-header)');
+          const lastItem = lineItems[lineItems.length - 1];
+          const inputs = lastItem.querySelectorAll('input');
+          const select = lastItem.querySelector('select');
+          
+          inputs[0].value = item.description || '';
+          inputs[1].value = item.quantity || 1;
+          inputs[2].value = item.unit_cost || 0;
+          inputs[3].value = item.markup_percent || 0;
+          select.value = item.category || 'hardware';
+          
+          // Trigger calculation  
+          calculateTotals();
+        });
+      }
+      
+      // Calculate totals
+      calculateTotals();
+      
+      // Store the estimate ID for updating instead of creating new
+      window.editingEstimateId = id;
+      
+      // Change button text to indicate editing
+      const saveButton = document.querySelector('button[onclick="saveEstimate()"]');
+      if (saveButton) {
+        saveButton.textContent = 'Update Estimate';
+        saveButton.onclick = () => updateEstimate(id);
+      }
+      
+      showToast('Estimate loaded for editing');
+    } else {
+      showToast('Error loading estimate', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading estimate for edit:', error);
+    showToast('Error loading estimate', 'error');
+  }
+}
+
+async function updateEstimate(id) {
+  const lineItems = [];
+  document
+    .querySelectorAll('.line-item:not(.line-item-header)')
+    .forEach((item) => {
+      const inputs = item.querySelectorAll('input');
+      const select = item.querySelector('select');
+
+      lineItems.push({
+        description: inputs[0].value,
+        quantity: parseInt(inputs[1].value || 0),
+        unit_cost: parseFloat(inputs[2].value || 0),
+        category: select.value,
+        markup_percent: parseFloat(inputs[3].value || 0),
+        line_total: parseFloat(
+          item.querySelector('.line-total').textContent.replace('$', '')
+        ),
+      });
+    });
+
+  const estimateData = {
+    id: id,
+    client_name: document.getElementById('clientName').value,
+    client_email: document.getElementById('clientEmail').value,
+    client_phone: document.getElementById('clientPhone').value,
+    project_address: document.getElementById('projectAddress').value,
+    project_type: document.getElementById('projectType').value,
+    system_types: [], // Empty array since system types are now in notes
+    line_items: lineItems,
+    subtotal: parseFloat(
+      document
+        .getElementById('subtotalAmount')
+        .textContent.replace('$', '')
+    ),
+    tax_amount: parseFloat(
+      document.getElementById('taxAmount').textContent.replace('$', '')
+    ),
+    total_amount: parseFloat(
+      document.getElementById('totalAmount').textContent.replace('$', '')
+    ),
+    notes: document.getElementById('estimateNotes').value,
+    status: document.getElementById('estimateStatus').value,
+  };
+
+  if (!estimateData.client_name) {
+    alert('Please enter a client name');
+    return;
+  }
+
+  if (lineItems.length === 0) {
+    alert('Please add at least one line item');
+    return;
+  }
+
+  try {
+    const response = await fetch('api.php?action=update_estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(estimateData),
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast('Estimate updated successfully!');
+      clearEstimateForm();
+      
+      // Reset button back to save mode
+      const saveButton = document.querySelector('button[onclick*="updateEstimate"]');
+      if (saveButton) {
+        saveButton.textContent = 'Save Estimate';
+        saveButton.onclick = saveEstimate;
+      }
+      
+      // Clear editing state
+      delete window.editingEstimateId;
+      
+      // Refresh history and go back to history section
+      loadEstimateHistory();
+      showSection('history');
+    } else {
+      showToast(
+        'Error updating estimate: ' + (result.error || 'Unknown error'),
+        'error'
+      );
+    }
+  } catch (error) {
+    console.error('Error updating estimate:', error);
+    showToast('Error updating estimate', 'error');
+  }
 }
 
 async function deleteEstimate(id) {
-  // Implementation here
+  if (!confirm('Are you sure you want to delete this estimate? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`api.php?action=delete_estimate&id=${id}`, {
+      method: 'POST'
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      showToast('Estimate deleted successfully');
+      loadEstimateHistory(); // Refresh the list
+    } else {
+      showToast('Error deleting estimate: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting estimate:', error);
+    showToast('Error deleting estimate', 'error');
+  }
 }
 
 async function updateEstimateStatus(id, status) {
-  // Implementation here
+  try {
+    const response = await fetch('api.php?action=update_estimate_status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, status: status })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showToast(`Estimate status updated to ${status}`);
+      // The status will already be updated in the dropdown, so no need to reload
+    } else {
+      showToast('Error updating status: ' + (result.error || 'Unknown error'), 'error');
+      // Reload to reset the dropdown to original state
+      loadEstimateHistory();
+    }
+  } catch (error) {
+    console.error('Error updating estimate status:', error);
+    showToast('Error updating status', 'error');
+    // Reload to reset the dropdown to original state
+    loadEstimateHistory();
+  }
 }
 
 // Product functions
