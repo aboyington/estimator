@@ -306,6 +306,18 @@
                     Profile
                   </a>
                   <a href="#" 
+                     id="adminDropdownLink"
+                     class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 hidden" 
+                     role="menuitem" 
+                     tabindex="-1" 
+                     id="user-menu-item-admin"
+                     onclick="showSection('admin'); closeUserDropdown()">
+                    <svg class="mr-3 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Admin
+                  </a>
+                  <a href="#" 
                      class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200" 
                      role="menuitem" 
                      tabindex="-1" 
@@ -376,11 +388,32 @@
                onclick="showSection('packages'); closeMobileMenu()">
               Packages
             </a>
-            <a href="#" 
-               class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-800" 
-               onclick="logout(); closeMobileMenu()">
-              Logout
-            </a>
+            <div class="border-t border-gray-200 mt-3 pt-3">
+              <div class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Account
+              </div>
+              <a href="#" 
+                 class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800" 
+                 onclick="showUserProfile(); closeMobileMenu()">
+                Profile
+              </a>
+              <a href="#" 
+                 id="adminMobileLink"
+                 class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800 hidden" 
+                 onclick="showSection('admin'); closeMobileMenu()">
+                Admin
+              </a>
+              <a href="#" 
+                 class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800" 
+                 onclick="showSection('settings'); closeMobileMenu()">
+                Settings
+              </a>
+              <a href="#" 
+                 class="mobile-nav-link block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-800" 
+                 onclick="logout(); closeMobileMenu()">
+                Logout
+              </a>
+            </div>
           </div>
         </div>
       </header>
@@ -757,6 +790,25 @@
               ></div>
             </div>
             <div id="packagesList"></div>
+          </div>
+        </div>
+
+        <!-- Admin Section -->
+        <div id="adminSection" class="section bg-white p-8 mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-8">Admin Panel</h2>
+
+          <!-- User Management -->
+          <div class="border-b border-gray-200 pb-8 mb-8">
+            <h3 class="text-xl font-semibold text-udora-600 mb-6 pb-2 border-b-2 border-udora-600 inline-block">
+              User Management
+            </h3>
+            <p class="text-gray-600 mb-6 text-sm">
+              View and manage all user accounts. You can deactivate users to prevent them from logging in.
+            </p>
+            
+            <div id="usersList" class="overflow-x-auto">
+              <!-- Users table will be populated here -->
+            </div>
           </div>
         </div>
 

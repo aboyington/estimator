@@ -28,6 +28,7 @@ A comprehensive web application for creating, managing, and tracking estimates f
 - **History Management**: View, search, and filter past estimates
 - **Product Catalog**: Manage products/services with categories and pricing
 - **Package System**: Create and manage service packages
+- **Admin Panel**: Complete user management system (activate/deactivate users, admin-only access)
 - **Settings**: Configure pricing, markup, tax rates, and company information
 - **Export/Import**: CSV functionality for data management
 - **Responsive Design**: Mobile-friendly interface with responsive navigation
@@ -126,6 +127,8 @@ npm run dev
 - **Form Handling**: Dynamic form generation and validation
 - **Data Export**: CSV generation and download functionality
 - **Responsive Design**: Mobile-first with collapsible navigation
+- **User Management**: Admin-only user account management with secure API integration
+- **Authentication**: Session-based authentication with admin privilege verification
 
 ## Browser Compatibility
 - **Modern Browsers Only**: Requires Safari 16.4+, Chrome 111+, Firefox 128+
@@ -152,6 +155,17 @@ npm run dev
 - ✅ **Button UX Enhancement**: Added loading states and visual feedback for user profile modal buttons
 - ✅ **Form Layout Consistency**: Improved login/register form spacing with consistent grid layout
 
+### Admin User Management System (August 2025)
+- ✅ **User Management Table**: Complete interface showing all users with ID, username, name, email, role, and status
+- ✅ **User Activation/Deactivation**: Admin can activate or deactivate user accounts with confirmation dialogs
+- ✅ **Security Implementation**: Proper authentication checks ensuring only admins can access user management
+- ✅ **API Endpoints**: Backend API with `get_all_users`, `deactivate_user`, and `activate_user` endpoints
+- ✅ **Navigation Integration**: Admin link moved from main navigation to user dropdown menu for better UX
+- ✅ **Mobile Support**: Admin functionality fully accessible in mobile navigation with dedicated Account section
+- ✅ **Visual Indicators**: Role badges (Admin/User) and status indicators (Active/Inactive) with proper styling
+- ✅ **Self-Protection**: Prevents admins from deactivating their own accounts
+- ✅ **API Response Fix**: Corrected JSON response format for proper frontend integration
+
 ### Benefits Gained
 1. **Performance**: Much faster page loads (81KB vs 3MB)
 2. **Modern CSS**: Access to latest CSS features and optimizations
@@ -159,6 +173,7 @@ npm run dev
 4. **Production Ready**: No development dependencies in production
 5. **Future Proof**: Using stable, officially released version
 6. **Professional UI**: Complete user interface with branded footer and modal system
+7. **Complete Admin System**: Full user management capabilities for system administrators
 
 ## Maintenance Notes
 
@@ -198,6 +213,6 @@ npm run dev
 
 ---
 
-*Last Updated: August 30, 2025*
+*Last Updated: August 31, 2025*
 *Tailwind CSS Version: v4.1.12*
-*Status: Production Ready ✅*
+*Status: Production Ready with Admin Panel ✅*

@@ -386,6 +386,8 @@ function showSection(section) {
       loadProductsServices();
     } else if (section === 'packages') {
       // loadPackages() is handled by packages.js via updateShowSectionForPackages()
+    } else if (section === 'admin') {
+      loadUsersForAdmin();
     } else if (section === 'settings') {
       loadProductCategories().then(() => renderProductCategoryList());
       loadPackageCategories().then(() => renderPackageCategoryList());
@@ -2532,7 +2534,18 @@ async function changeUserPassword() {
 function updateUserDisplay() {
   // With the new person icon design, no dynamic updates are needed
   // The profile icon is now a static SVG person icon
-  // This function is kept for future extensibility if needed
+  // Show/hide admin navigation based on user admin status
+  if (currentUser && currentUser.is_admin) {
+    const adminDropdownLink = document.getElementById('adminDropdownLink');
+    const adminMobileLink = document.getElementById('adminMobileLink');
+    if (adminDropdownLink) adminDropdownLink.classList.remove('hidden');
+    if (adminMobileLink) adminMobileLink.classList.remove('hidden');
+  } else {
+    const adminDropdownLink = document.getElementById('adminDropdownLink');
+    const adminMobileLink = document.getElementById('adminMobileLink');
+    if (adminDropdownLink) adminDropdownLink.classList.add('hidden');
+    if (adminMobileLink) adminMobileLink.classList.add('hidden');
+  }
   console.log('User display updated for:', currentUser?.username || 'Unknown user');
 }
 
@@ -2595,3 +2608,149 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 });
+
+// Admin User Management Functions
+async function loadUsersForAdmin() {
+  if (!currentUser || !currentUser.is_admin) {
+    showToast('Access denied: Admin privileges required', 'error');
+    showSection('estimate');
+    return;
+  }
+
+  try {
+    const response = await fetch('api.php?action=get_all_users');
+    const result = await response.json();
+    
+    if (result.success && result.users) {
+      renderUsersTable(result.users);
+    } else {
+      showToast('Error loading users: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    showToast('Error loading users', 'error');
+  }
+}
+
+function renderUsersTable(users) {
+  const container = document.getElementById('usersList');
+  
+  if (!users.length) {
+    container.innerHTML = '<div class="text-center py-8 text-gray-500">No users found</div>';
+    return;
+  }
+
+  const tableHTML = `
+    <table class="w-full border-collapse border border-gray-300">
+      <thead>
+        <tr class="bg-gray-50">
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">ID</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Username</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Name</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Email</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Role</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+          <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">Last Login</th>
+          <th class="border border-gray-300 px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(user => `
+          <tr class="hover:bg-gray-50">
+            <td class="border border-gray-300 px-4 py-3 text-sm font-mono">${user.id}</td>
+            <td class="border border-gray-300 px-4 py-3 text-sm font-medium">${user.username}</td>
+            <td class="border border-gray-300 px-4 py-3 text-sm">${(user.first_name || '') + ' ' + (user.last_name || '').trim() || 'N/A'}</td>
+            <td class="border border-gray-300 px-4 py-3 text-sm">${user.email || 'N/A'}</td>
+            <td class="border border-gray-300 px-4 py-3 text-sm">
+              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                user.is_admin ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+              }">
+                ${user.is_admin ? 'Admin' : 'User'}
+              </span>
+            </td>
+            <td class="border border-gray-300 px-4 py-3 text-sm">
+              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }">
+                ${user.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </td>
+            <td class="border border-gray-300 px-4 py-3 text-sm text-gray-500">
+              ${user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}
+            </td>
+            <td class="border border-gray-300 px-4 py-3 text-center">
+              <div class="flex justify-center space-x-2">
+                ${user.is_active ? `
+                  <button onclick="deactivateUser(${user.id}, '${user.username}')" 
+                          class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition-colors duration-200"
+                          ${user.id === currentUser.id ? 'disabled title="Cannot deactivate yourself"' : ''}>
+                    Deactivate
+                  </button>
+                ` : `
+                  <button onclick="activateUser(${user.id}, '${user.username}')" 
+                          class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded transition-colors duration-200">
+                    Activate
+                  </button>
+                `}
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  container.innerHTML = tableHTML;
+}
+
+async function deactivateUser(userId, username) {
+  if (userId === currentUser.id) {
+    showToast('You cannot deactivate yourself', 'error');
+    return;
+  }
+
+  showConfirmation(
+    `Are you sure you want to deactivate user "${username}"? They will no longer be able to log in.`,
+    async () => {
+      try {
+        const response = await fetch('api.php?action=deactivate_user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          showToast(`User "${username}" has been deactivated`);
+          loadUsersForAdmin(); // Refresh the user list
+        } else {
+          showToast('Error deactivating user: ' + (result.error || 'Unknown error'), 'error');
+        }
+      } catch (error) {
+        console.error('Error deactivating user:', error);
+        showToast('Error deactivating user', 'error');
+      }
+    }
+  );
+}
+
+async function activateUser(userId, username) {
+  try {
+    const response = await fetch('api.php?action=activate_user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast(`User "${username}" has been activated`);
+      loadUsersForAdmin(); // Refresh the user list
+    } else {
+      showToast('Error activating user: ' + (result.error || 'Unknown error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error activating user:', error);
+    showToast('Error activating user', 'error');
+  }
+}

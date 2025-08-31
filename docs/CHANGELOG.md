@@ -5,6 +5,63 @@ All notable changes to the White-Label Estimator project will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-08-31
+
+### Added - Admin User Management System
+- **Complete Admin Panel**: Full user management system for system administrators
+  - Comprehensive user management table displaying all registered users
+  - User information display: ID, username, full name, email, role, and status
+  - Last login tracking for security and usage monitoring
+  - Visual role indicators with Admin/User badges for quick identification
+  - Status indicators showing Active/Inactive user states with color coding
+- **User Account Management**: Admin controls for user activation and deactivation
+  - Secure user deactivation functionality with confirmation dialogs
+  - User reactivation capabilities for account restoration
+  - Self-protection preventing admins from deactivating their own accounts
+  - Proper validation ensuring at least one active admin remains in the system
+- **Security Implementation**: Comprehensive authentication and authorization
+  - Admin-only access with proper privilege verification on all admin endpoints
+  - Session-based authentication with secure admin privilege checks
+  - API endpoint protection ensuring only authenticated admins can manage users
+  - Frontend security preventing unauthorized access to admin functionality
+
+### Enhanced - Navigation and User Experience
+- **Navigation Integration**: Professional admin access through user dropdown menu
+  - Admin link moved from main navigation to user dropdown for better UX
+  - Positioned between Profile and Settings for logical grouping
+  - Mobile navigation includes Admin link in dedicated Account section
+  - Consistent visibility control based on user admin privileges
+- **User Interface Design**: Professional admin panel with comprehensive user information
+  - Clean, responsive table layout for user management
+  - Toast notifications for successful operations and error handling
+  - Confirmation dialogs for destructive actions (user deactivation)
+  - Visual feedback during operations with proper loading states
+
+### Fixed - API Response Format
+- **Backend API Consistency**: Corrected JSON response format for frontend integration
+  - Fixed `get_all_users` endpoint to return proper `{success: true, users: [...]}` format
+  - Previously returned raw array causing "Unknown error" in frontend
+  - Enhanced error handling and response consistency across admin endpoints
+  - Improved debugging and troubleshooting capabilities
+
+### Technical Implementation
+- **Backend API Endpoints**: New admin-specific functionality
+  - `GET /api.php?action=get_all_users` - Retrieve all users (admin only)
+  - `POST /api.php?action=deactivate_user` - Deactivate user account (admin only)
+  - `POST /api.php?action=activate_user` - Activate user account (admin only)
+  - Proper HTTP status codes and error responses for all admin operations
+- **Frontend JavaScript Integration**: Admin functionality seamlessly integrated
+  - `loadUsersForAdmin()` function for fetching and displaying user data
+  - `renderUsersTable()` function creating comprehensive user management interface
+  - `deactivateUser()` and `activateUser()` functions with confirmation dialogs
+  - `updateUserDisplay()` function managing admin link visibility based on privileges
+- **Database Schema**: Existing user management leveraged for admin functionality
+  - Utilizes existing `is_admin` and `is_active` columns in users table
+  - No database migrations required - works with existing user data
+  - Proper indexing and performance for user management queries
+
+---
+
 ## [1.2.3] - 2025-08-30
 
 ### Added - Modern CSS Framework & UI/UX Enhancements

@@ -24,9 +24,24 @@ function getCurrentUser($db) {
     $userId = getCurrentUserId();
     if (!$userId) return null;
     
-    $stmt = $db->prepare("SELECT id, username, email, first_name, last_name FROM users WHERE id = ? AND is_active = 1");
+    $stmt = $db->prepare("SELECT id, username, email, first_name, last_name, is_admin FROM users WHERE id = ? AND is_active = 1");
     $stmt->execute([$userId]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Helper function to check if current user is admin
+function isCurrentUserAdmin($db) {
+    $user = getCurrentUser($db);
+    return $user && (bool)$user['is_admin'];
+}
+
+// Helper function to require admin access
+function requireAdmin($db) {
+    if (!isCurrentUserAdmin($db)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Admin access required']);
+        exit;
+    }
 }
 
 // Authentication check - allow login, register, and check_auth without authentication
@@ -61,7 +76,7 @@ try {
             }
             
             // Find user by username or email
-            $stmt = $db->prepare("SELECT id, username, email, password_hash, first_name, last_name FROM users WHERE (username = ? OR email = ?) AND is_active = 1");
+            $stmt = $db->prepare("SELECT id, username, email, password_hash, first_name, last_name, is_admin FROM users WHERE (username = ? OR email = ?) AND is_active = 1");
             $stmt->execute([$username, $username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -70,6 +85,7 @@ try {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['user_email'] = $user['email'];
+                $_SESSION['is_admin'] = (bool)$user['is_admin'];
                 
                 echo json_encode([
                     'success' => true,
@@ -78,7 +94,8 @@ try {
                         'username' => $user['username'],
                         'email' => $user['email'],
                         'first_name' => $user['first_name'],
-                        'last_name' => $user['last_name']
+                        'last_name' => $user['last_name'],
+                        'is_admin' => (bool)$user['is_admin']
                     ]
                 ]);
             } else {
@@ -1068,9 +1085,113 @@ try {
             break;
             
         case 'get_all_users':
-            $stmt = $db->query("SELECT id, username, email, first_name, last_name, is_active, created_at FROM users ORDER BY username ASC");
+            // Require admin access
+            requireAdmin($db);
+            
+            $stmt = $db->query("SELECT id, username, email, first_name, last_name, is_active, is_admin, created_at FROM users ORDER BY username ASC");
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode($users);
+            
+            // Convert is_admin to boolean for cleaner JSON
+            foreach ($users as &$user) {
+                $user['is_admin'] = (bool)$user['is_admin'];
+                $user['is_active'] = (bool)$user['is_active'];
+            }
+            
+            echo json_encode(['success' => true, 'users' => $users]);
+            break;
+
+        case 'deactivate_user':
+            // Require admin access
+            requireAdmin($db);
+            
+            $data = json_decode(file_get_contents('php://input'), true);
+            $userId = $data['user_id'] ?? 0;
+            $currentUserId = getCurrentUserId();
+            
+            if (!$userId) {
+                echo json_encode(['success' => false, 'error' => 'User ID is required']);
+                break;
+            }
+            
+            if ($userId == $currentUserId) {
+                echo json_encode(['success' => false, 'error' => 'You cannot deactivate your own account']);
+                break;
+            }
+            
+            // Check if user exists and get their current status
+            $stmt = $db->prepare("SELECT id, username, email, is_admin, is_active FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $targetUser = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$targetUser) {
+                echo json_encode(['success' => false, 'error' => 'User not found']);
+                break;
+            }
+            
+            // Prevent deactivating the last admin
+            if ($targetUser['is_admin']) {
+                $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE is_admin = 1 AND is_active = 1");
+                $stmt->execute();
+                $adminCount = $stmt->fetchColumn();
+                
+                if ($adminCount <= 1) {
+                    echo json_encode(['success' => false, 'error' => 'Cannot deactivate the last active admin user']);
+                    break;
+                }
+            }
+            
+            // Deactivate the user
+            $stmt = $db->prepare("UPDATE users SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([$userId]);
+            
+            echo json_encode([
+                'success' => true, 
+                'message' => 'User ' . $targetUser['username'] . ' has been deactivated',
+                'user' => [
+                    'id' => $targetUser['id'],
+                    'username' => $targetUser['username'],
+                    'email' => $targetUser['email'],
+                    'is_active' => false
+                ]
+            ]);
+            break;
+
+        case 'activate_user':
+            // Require admin access
+            requireAdmin($db);
+            
+            $data = json_decode(file_get_contents('php://input'), true);
+            $userId = $data['user_id'] ?? 0;
+            
+            if (!$userId) {
+                echo json_encode(['success' => false, 'error' => 'User ID is required']);
+                break;
+            }
+            
+            // Check if user exists
+            $stmt = $db->prepare("SELECT id, username, email FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $targetUser = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$targetUser) {
+                echo json_encode(['success' => false, 'error' => 'User not found']);
+                break;
+            }
+            
+            // Activate the user
+            $stmt = $db->prepare("UPDATE users SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([$userId]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'User ' . $targetUser['username'] . ' has been activated',
+                'user' => [
+                    'id' => $targetUser['id'],
+                    'username' => $targetUser['username'],
+                    'email' => $targetUser['email'],
+                    'is_active' => true
+                ]
+            ]);
             break;
 
         case 'import_products':
